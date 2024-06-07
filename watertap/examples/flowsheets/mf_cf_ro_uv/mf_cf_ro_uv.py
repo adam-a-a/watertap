@@ -17,10 +17,13 @@ from pyomo.environ import (
     Block,
     Constraint,
     assert_optimal_termination,
+    Objective,
+    
+    
 )
 from pyomo.network import Arc
 from pyomo.util.check_units import assert_units_consistent
-
+from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from idaes.core import FlowsheetBlock, UnitModelBlockData
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
@@ -116,6 +119,7 @@ def main(
     erd_config=ERDtype.no_ERD,
     uvdimension=uvdimension.zo,
     has_aop=False,
+    has_measured_vars=True,
     diagnostics_active=False,
 ):
     m = build(
@@ -124,6 +128,7 @@ def main(
         erd_config=erd_config,
         uvdimension=uvdimension,
         has_aop=has_aop,
+        has_measured_vars=has_measured_vars
     )
 
     set_operating_conditions(m)
@@ -133,28 +138,30 @@ def main(
 
     if diagnostics_active:
 
-        try:
-            assert_degrees_of_freedom(m, 0)
-            assert_units_consistent(m)
-            initialize_system(m)
-            if diagnostics_active:
-                dt.report_numerical_issues()
-            results = solve(m, checkpoint="solve flowsheet after initializing system")
-            assert_optimal_termination(results)
-            display_results(m)
+        # try:
+        assert_degrees_of_freedom(m, 0)
+        assert_units_consistent(m)
+        initialize_system(m)
+        if diagnostics_active:
+            dt.report_numerical_issues()
+        results = solve(m, checkpoint="solve flowsheet after initializing system")
+        assert_optimal_termination(results)
+        display_results(m)
+        m.fs.stream_table()
 
-            # TODO: handle costing in next PR
-            # add_costing(m)
-            # assert_degrees_of_freedom(m, 0)
-            # m.fs.costing.initialize()
 
-            # results = solve(m, checkpoint="solve flowsheet after costing")
+        # TODO: handle costing in next PR
+        # add_costing(m)
+        # assert_degrees_of_freedom(m, 0)
+        # m.fs.costing.initialize()
 
-            # display_results(m)
-            return m, results, dt
+        # results = solve(m, checkpoint="solve flowsheet after costing")
 
-        except:
-            return _, _, dt
+        # display_results(m)
+        return m, results, dt
+
+        # except:
+            # return _, _, dt
     else:
         assert_degrees_of_freedom(m, 0)
         assert_units_consistent(m)
@@ -163,6 +170,7 @@ def main(
         results = solve(m, checkpoint="solve flowsheet after initializing system")
         assert_optimal_termination(results)
         display_results(m)
+        m.fs.stream_table()
 
         # TODO:
         # add_costing(m)
@@ -174,7 +182,7 @@ def main(
     return m, results
 
 
-def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop):
+def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop, has_measured_vars):
     """
     ro_props: choose between "NaCl" and "Seawater" prop models for RO
     ro_dimension: choose between 0d, 1d
@@ -196,7 +204,7 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop):
         material_flow_basis=MaterialFlowBasis.mass,
         ignore_neutral_charge=True,
     )
-
+    m.fs.mcas_props._metadata.add_properties({"pH": {"method": None}})
     # Add Database for initially parameterization of ZO models
     m.db = Database()
 
@@ -222,13 +230,10 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop):
 
     @m.fs.mcas_to_ro_translator.Constraint(m.fs.ro_props.component_list)
     def eq_flow_mass_comp(blk, j):
-        if j.lower() == "tss":
-            Constraint.Skip
-        else:
-            return (
-                blk.properties_in[0].flow_mass_phase_comp["Liq", j]
-                == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
-            )
+        return (
+            blk.properties_in[0].flow_mass_phase_comp["Liq", j]
+            == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
+        )
 
     # Add Mixer for concentrate recirculation
     m.fs.feed_mixer = Mixer(property_package=m.fs.ro_props,
@@ -277,10 +282,8 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop):
     @m.fs.ro_to_mcas_translator.Constraint(m.fs.mcas_props.component_list)
     def eq_flow_mass_comp(blk, j):
         if j.lower() == "tss":
-            return (
-                m.fs.cf.treated.flow_mass_phase_comp[0, "Liq", j]
-                == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
-            )
+            blk.properties_out[0].flow_mass_phase_comp["Liq", j].fix(0)
+            return Constraint.Skip
         else:
             return (
                 blk.properties_in[0].flow_mass_phase_comp["Liq", j]
@@ -402,13 +405,15 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop):
     # Apply connections
     TransformationFactory("network.expand_arcs").apply_to(m)
 
+    if has_measured_vars:
+        touch_measurable_vars(m)
     # scaling
     # set default property values
     m.fs.ro_props.set_default_scaling(
-        "flow_mass_phase_comp", 1e-2, index=("Liq", "H2O")
+        "flow_mass_phase_comp", 1e0, index=("Liq", "H2O")
     )
     m.fs.ro_props.set_default_scaling(
-        "flow_mass_phase_comp", 1e-1, index=("Liq", m.fs.ro_ion)
+        "flow_mass_phase_comp", 1e2, index=("Liq", m.fs.ro_ion)
     )
     # if m.fs.uv is not None:
     #     iscale.set_scaling_factor(m.fs.uv.control_volume.properties_in[0].flow_mass_phase_comp['Liq', 'tss'], 1e3)
@@ -642,17 +647,32 @@ def add_costing(m):
     # )
     pass
 
+def touch_measurable_vars(m, target_vars=None):
+    from idaes.core.util.tables import arcs_to_stream_dict, stream_states_dict
+    if target_vars is None:
+        target_vars = ["flow_vol_phase", "mass_frac_phase_comp", "pressure"]
+    if target_vars is not None and not isinstance(target_vars, list):
+        raise ValueError("target_vars argument must be a list of strings representing valid property names.")
+        
+    arc_stream_pairs = arcs_to_stream_dict(m)
+    stream_state_pairs = stream_states_dict(arc_stream_pairs)
+    for sb in stream_state_pairs.values():
+        for var in target_vars:
+            getattr(sb,var)
+    
+    return
 
 if __name__ == "__main__":
     diagnostics_flag = True
-
+    has_touched_vars=True
     if diagnostics_flag is True:
         m, results, dt = main(
             ro_props="seawater",
             ro_dimension="1d",
             erd_config=ERDtype.no_ERD,
-            uvdimension=uvdimension.zero_d,
+            uvdimension=uvdimension.zo,
             has_aop=True,
+            has_measured_vars=has_touched_vars,
             diagnostics_active=diagnostics_flag,
         )
     elif diagnostics_flag is False:
@@ -660,9 +680,67 @@ if __name__ == "__main__":
             ro_props="seawater",
             ro_dimension="1d",
             erd_config=ERDtype.no_ERD,
-            uvdimension=uvdimension.zero_d,
+            uvdimension=uvdimension.zo,
             has_aop=True,
+            has_measured_vars=has_touched_vars,
             diagnostics_active=diagnostics_flag,
         )
     else:
         raise TypeError("diagnostics_flag should be set to True or False.")
+
+
+    m.fs.obj = Objective(expr=0)
+    nlp = PyomoNLP(m)
+    jac = nlp.evaluate_jacobian()
+    var_list = nlp.primals_names()
+    con_list = nlp.constraint_names()
+    jac_array = jac.toarray()
+    import pandas as pd
+    df = pd.DataFrame(jac_array, index = con_list, columns=var_list)
+    if has_touched_vars:
+        msg= "_with_touched_vars"
+    else:
+        msg = ""    
+    df.to_csv(f'ro_pilot_jacobian{msg}.csv')
+
+    if has_touched_vars:
+
+        # get submatrix
+        pyomo_var_list = nlp.get_pyomo_variables()
+        pyomo_con_list = nlp.get_pyomo_constraints()
+        
+        def get_measurable_vars(m, target_vars=None):
+            from idaes.core.util.tables import arcs_to_stream_dict, stream_states_dict
+            if target_vars is None:
+                target_vars = ["flow_vol_phase", "mass_frac_phase_comp", "pressure"]
+            if target_vars is not None and not isinstance(target_vars, list):
+                raise ValueError("target_vars argument must be a list of strings representing valid property names.")
+                
+            arc_stream_pairs = arcs_to_stream_dict(m)
+            stream_state_pairs = stream_states_dict(arc_stream_pairs)
+            sub_var_list = []
+            for sb in stream_state_pairs.values():
+                for var in target_vars:
+                    sub_var_list.append(getattr(sb,var))
+            
+            return sub_var_list
+        
+        subvarlist=get_measurable_vars(m)
+        sub_jac = nlp.extract_submatrix_jacobian(subvarlist, pyomo_con_list)
+        sub_jac_array = sub_jac.toarray()
+        sub_var_names = []
+        for v in subvarlist:
+            if not v.is_indexed():
+                sub_var_names.append(v.name)
+            else:
+                for val in v.values():
+                    sub_var_names.append(val.name)
+        
+        subdf = pd.DataFrame(sub_jac_array, index = con_list, columns=sub_var_names)
+        subdf.to_csv(f'ro_pilot_SUB_jacobian{msg}.csv')
+
+    
+
+
+
+
