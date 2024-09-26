@@ -35,6 +35,7 @@ from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
+from idaes.core.util.tables import arcs_to_stream_dict, stream_states_dict
 
 # TODO: bring costing in subsequent PR
 # from idaes.core import UnitModelCostingBlock
@@ -648,7 +649,6 @@ def add_costing(m):
     pass
 
 def touch_measurable_vars(m, target_vars=None):
-    from idaes.core.util.tables import arcs_to_stream_dict, stream_states_dict
     if target_vars is None:
         target_vars = ["flow_vol_phase", "mass_frac_phase_comp", "pressure"]
     if target_vars is not None and not isinstance(target_vars, list):
@@ -710,7 +710,6 @@ if __name__ == "__main__":
         pyomo_con_list = nlp.get_pyomo_constraints()
         
         def get_measurable_vars(m, target_vars=None):
-            from idaes.core.util.tables import arcs_to_stream_dict, stream_states_dict
             if target_vars is None:
                 target_vars = ["flow_vol_phase", "mass_frac_phase_comp", "pressure"]
             if target_vars is not None and not isinstance(target_vars, list):
