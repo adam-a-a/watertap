@@ -17,11 +17,9 @@ from pyomo.environ import (
     Block,
     Constraint,
     assert_optimal_termination,
-    Objective,
-    
-    
+    Objective,    
 )
-from pyomo.network import Arc
+from pyomo.network import Arc, Port
 from pyomo.util.check_units import assert_units_consistent
 from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from idaes.core import FlowsheetBlock, UnitModelBlockData
@@ -35,7 +33,7 @@ from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from idaes.core.util.tables import arcs_to_stream_dict, stream_states_dict
+from idaes.core.util.tables import arcs_to_stream_dict, stream_states_dict, _get_state_from_port
 
 # TODO: bring costing in subsequent PR
 # from idaes.core import UnitModelCostingBlock
@@ -654,21 +652,43 @@ def touch_measurable_vars(m, target_vars=None):
     if target_vars is not None and not isinstance(target_vars, list):
         raise ValueError("target_vars argument must be a list of strings representing valid property names.")
         
-    arc_stream_pairs = arcs_to_stream_dict(m)
-    stream_state_pairs = stream_states_dict(arc_stream_pairs)
-    for sb in stream_state_pairs.values():
+    stream_state_list=list_stateblocks_on_active_ports(m)
+    for sb in stream_state_list:
         for var in target_vars:
             getattr(sb,var)
     
     return
 
+def list_stateblocks_on_active_ports(blk):
+    sb_list=[]
+    active_port_list=[]
+    for p in blk.fs.component_objects(Port, descend_into=True):
+        if p.active:
+            active_port_list.append(p.name)
+            sb_temp = _get_state_from_port(p,0)
+            sb_list.append(sb_temp)
+    return sb_list
+
+# def fix_by_constraint(variable, index=None):
+#     @variable.Constraint(index)
+#     def eq_fix_value(blk, j):
+#         return (
+#             blk.properties_in[0].flow_mass_phase_comp["Liq", j]
+#             == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
+#         )
+
+
+
 if __name__ == "__main__":
     diagnostics_flag = True
     has_touched_vars=True
+    has_sub_jac=False
+    get_jacobian=True
+    RO_dim="1d"
     if diagnostics_flag is True:
         m, results, dt = main(
             ro_props="seawater",
-            ro_dimension="1d",
+            ro_dimension=RO_dim,
             erd_config=ERDtype.no_ERD,
             uvdimension=uvdimension.zo,
             has_aop=True,
@@ -678,7 +698,7 @@ if __name__ == "__main__":
     elif diagnostics_flag is False:
         m, results = main(
             ro_props="seawater",
-            ro_dimension="1d",
+            ro_dimension=RO_dim,
             erd_config=ERDtype.no_ERD,
             uvdimension=uvdimension.zo,
             has_aop=True,
@@ -688,57 +708,61 @@ if __name__ == "__main__":
     else:
         raise TypeError("diagnostics_flag should be set to True or False.")
 
+    if get_jacobian:
+        m.fs.mf_pump.control_volume
+        m.fs.obj = Objective(expr=0)
+        nlp = PyomoNLP(m)
+        jac = nlp.evaluate_jacobian()
+        var_list = nlp.primals_names()
+        con_list = nlp.constraint_names()
+        jac_array = jac.toarray()
+        import pandas as pd
+        df = pd.DataFrame(jac_array, index = con_list, columns=var_list)
+        if has_touched_vars:
+            msg= "_with_touched_vars"
+        else:
+            msg = ""    
+        df.to_csv(f'ro{RO_dim}_pilot_jacobian{msg}.csv')
 
-    m.fs.obj = Objective(expr=0)
-    nlp = PyomoNLP(m)
-    jac = nlp.evaluate_jacobian()
-    var_list = nlp.primals_names()
-    con_list = nlp.constraint_names()
-    jac_array = jac.toarray()
-    import pandas as pd
-    df = pd.DataFrame(jac_array, index = con_list, columns=var_list)
-    if has_touched_vars:
-        msg= "_with_touched_vars"
-    else:
-        msg = ""    
-    df.to_csv(f'ro_pilot_jacobian{msg}.csv')
+        if has_sub_jac:
 
-    if has_touched_vars:
+            # get submatrix
+            pyomo_var_list = nlp.get_pyomo_variables()
+            pyomo_con_list = nlp.get_pyomo_constraints()
 
-        # get submatrix
-        pyomo_var_list = nlp.get_pyomo_variables()
-        pyomo_con_list = nlp.get_pyomo_constraints()
-        
-        def get_measurable_vars(m, target_vars=None):
-            if target_vars is None:
-                target_vars = ["flow_vol_phase", "mass_frac_phase_comp", "pressure"]
-            if target_vars is not None and not isinstance(target_vars, list):
-                raise ValueError("target_vars argument must be a list of strings representing valid property names.")
+            def get_measurable_vars(m, target_vars=None):
+                if target_vars is None:
+                    target_vars = ["flow_vol_phase", "mass_frac_phase_comp", "pressure"]
+                if target_vars is not None and not isinstance(target_vars, list):
+                    raise ValueError("target_vars argument must be a list of strings representing valid property names.")
+
+                # Commenting out the code below and trying another approach to access all Stateblocks on active ports:                    
+                # arc_stream_pairs = arcs_to_stream_dict(m)
+                # stream_state_pairs = stream_states_dict(arc_stream_pairs)
+                sub_var_list = []
+                # for sb in stream_state_pairs.values():
+                stream_state_list = list_stateblocks_on_active_ports(m)
+                for sb in stream_state_list:
+                    for var in target_vars:
+                        sub_var_list.append(getattr(sb,var))
                 
-            arc_stream_pairs = arcs_to_stream_dict(m)
-            stream_state_pairs = stream_states_dict(arc_stream_pairs)
-            sub_var_list = []
-            for sb in stream_state_pairs.values():
-                for var in target_vars:
-                    sub_var_list.append(getattr(sb,var))
+                return sub_var_list
             
-            return sub_var_list
-        
-        subvarlist=get_measurable_vars(m)
-        sub_jac = nlp.extract_submatrix_jacobian(subvarlist, pyomo_con_list)
-        sub_jac_array = sub_jac.toarray()
-        sub_var_names = []
-        for v in subvarlist:
-            if not v.is_indexed():
-                sub_var_names.append(v.name)
-            else:
-                for val in v.values():
-                    sub_var_names.append(val.name)
-        
-        subdf = pd.DataFrame(sub_jac_array, index = con_list, columns=sub_var_names)
-        subdf.to_csv(f'ro_pilot_SUB_jacobian{msg}.csv')
+            subvarlist=get_measurable_vars(m)
+            sub_jac = nlp.extract_submatrix_jacobian(subvarlist, pyomo_con_list)
+            sub_jac_array = sub_jac.toarray()
+            sub_var_names = []
+            for v in subvarlist:
+                if not v.is_indexed():
+                    sub_var_names.append(v.name)
+                else:
+                    for val in v.values():
+                        sub_var_names.append(val.name)
+            
+            subdf = pd.DataFrame(sub_jac_array, index = con_list, columns=sub_var_names)
+            subdf.to_csv(f'ro{RO_dim}_pilot_SUB_jacobian{msg}.csv')
 
-    
+        
 
 
 
