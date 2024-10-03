@@ -524,9 +524,9 @@ def set_operating_conditions(m):
         m.fs.uv.exposure_time.fix(500 * pyunits.s)
         m.fs.uv.inactivation_rate["Liq", "tss"].fix(2.3 * pyunits.cm**2 / pyunits.J)
         # m.fs.uv.outlet.temperature[0].fix(temperature)
-        @m.fs.uv.Constraint([0])
-        def eq_fix_outlet_temp(blk, t):
-            return blk.control_volume.properties_out[t].temperature == temperature
+        # @m.fs.uv.Constraint([0])
+        # def eq_fix_outlet_temp(blk, t):
+        #     return blk.control_volume.properties_out[t].temperature == temperature
 
         m.fs.uv.electrical_efficiency_phase_comp[0, "Liq", "tss"].fix(
             0.1 * pyunits.kWh / pyunits.m**3

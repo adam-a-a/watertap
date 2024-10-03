@@ -451,6 +451,8 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
             has_pressure_change=self.config.has_pressure_change,
         )
 
+        self.control_volume.add_isothermal_assumption()
+
         # Add Ports
         self.add_inlet_port(name="inlet", block=self.control_volume)
         self.add_outlet_port(name="outlet", block=self.control_volume)
