@@ -136,18 +136,21 @@ def main(
     dt.report_structural_issues()
 
     if diagnostics_active:
+        results = {}
 
         # try:
         assert_degrees_of_freedom(m, 0)
         assert_units_consistent(m)
         initialize_system(m)
+        assert_degrees_of_freedom(m, 0)
         if diagnostics_active:
             dt.report_numerical_issues()
-        results = solve(m, checkpoint="solve flowsheet after initializing system")
+        results = solve(m, tee=True, checkpoint="solve flowsheet after initializing system")
         assert_optimal_termination(results)
         display_results(m)
         m.fs.stream_table()
-
+        # except:
+        #     pass
 
         # TODO: handle costing in next PR
         # add_costing(m)
@@ -165,6 +168,7 @@ def main(
         assert_degrees_of_freedom(m, 0)
         assert_units_consistent(m)
         initialize_system(m)
+        assert_degrees_of_freedom(m, 0)
 
         results = solve(m, checkpoint="solve flowsheet after initializing system")
         assert_optimal_termination(results)
@@ -432,6 +436,9 @@ def set_operating_conditions(m):
     conc_mass_tss = 0.03 * pyunits.kg / pyunits.m**3
     temperature = 298 * pyunits.K
     pressure = 1e5 * pyunits.Pa
+    mf_and_cf_pump_discharge_pressures= 2e5* pyunits.Pa
+    hp_discharge_pressure = 70e5* pyunits.Pa
+    pressure_atm =101325* pyunits.Pa
     m.fs.feed.temperature[0].fix(temperature)
     m.fs.feed.pressure[0].fix(pressure)
     m.fs.feed.properties.calculate_state(
@@ -444,13 +451,14 @@ def set_operating_conditions(m):
     )
     # TODO: add scaling at least for feed props before solve
     # solve(m.fs.feed, checkpoint="solve feed block")
-    m.fs.feed.display()
 
     # ---pretreatment---
     # TODO: add option to eliminate underlying fixed energy calculations and shift to pump
     # mf pump
     m.fs.mf_pump.efficiency_pump.fix(0.8)
-    m.fs.mf_pump.control_volume.properties_out[0].pressure.fix(2e5)
+    mf_dP=mf_and_cf_pump_discharge_pressures-pressure
+    m.fs.mf_pump.control_volume.deltaP[0].fix(mf_dP)
+    # m.fs.mf_pump.control_volume.properties_out[0].pressure.fix(2e5)
 
     # microfiltration
     m.db.get_unit_operation_parameters("microfiltration")
@@ -460,7 +468,9 @@ def set_operating_conditions(m):
     
     # cf pump
     m.fs.cf_pump.efficiency_pump.fix(0.8)
-    m.fs.cf_pump.control_volume.properties_out[0].pressure.fix(2e5)
+    # m.fs.cf_pump.control_volume.properties_out[0].pressure.fix(2e5)
+    m.fs.cf_pump.control_volume.deltaP[0].fix(0.0)
+
 
     # cartridge filtration
     m.db.get_unit_operation_parameters("cartridge_filtration")
@@ -469,26 +479,42 @@ def set_operating_conditions(m):
     m.fs.cf.energy_electric_flow_vol_inlet.fix(0)
 
     # MCAS to RO prop translator
-    m.fs.mcas_to_ro_translator.outlet.pressure[0].fix(pressure)
+    m.fs.mcas_to_ro_translator.outlet.pressure[0].fix(mf_and_cf_pump_discharge_pressures)
     m.fs.mcas_to_ro_translator.outlet.temperature[0].fix(temperature)
 
     # hp pump
     m.fs.hp_pump.efficiency_pump.fix(0.8)
-    m.fs.hp_pump.control_volume.properties_out[0].pressure.fix(70e5)
+    hp_dP = hp_discharge_pressure - pressure_atm
 
+    # m.fs.hp_pump.control_volume.deltaP[0].fix(hp_dP+2e5*pyunits.Pa)
+    # m.fs.hp_pump.control_volume.properties_out[0].pressure = hp_discharge_pressure
+    
+    @m.fs.hp_pump.control_volume.Constraint([0])
+    def eq_fix_hp_pressure(blk, t):
+        return blk.properties_out[t].pressure == hp_discharge_pressure
+
+
+    
+    # RO
+    #TODO: update A, B, channel height, porosity, area, width (others?)
     m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
     m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
     m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    m.fs.RO.feed_side.spacer_porosity.fix(0.97)  # spacer porosity in membrane stage [-]
-    m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
+    m.fs.RO.feed_side.spacer_porosity.fix(0.75)  # spacer porosity in membrane stage [-]
     m.fs.RO.width.fix(1000)  # stage width [m]
     m.fs.RO.area.fix(flow_vol * 4.5e4 * pyunits.s / pyunits.m)
+   
+    @m.fs.RO.Constraint([0])
+    def eq_fix_RO_perm_pressure(blk, t):
+        return blk.permeate.pressure[t] == pressure_atm
+    
+    # m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
 
     # Concentrate Separator
     m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(0)
 
     # RO props to MCAS translator
-    m.fs.ro_to_mcas_translator.outlet.pressure[0].fix(pressure)
+    m.fs.ro_to_mcas_translator.outlet.pressure[0].fix(pressure_atm)
     m.fs.ro_to_mcas_translator.outlet.temperature[0].fix(temperature)
 
     if hasattr(m.fs.uv, "_tech_type"):
@@ -497,8 +523,10 @@ def set_operating_conditions(m):
         m.fs.uv.uv_intensity.fix(1 * pyunits.mW / pyunits.cm**2)
         m.fs.uv.exposure_time.fix(500 * pyunits.s)
         m.fs.uv.inactivation_rate["Liq", "tss"].fix(2.3 * pyunits.cm**2 / pyunits.J)
-        # m.fs.uv.outlet.pressure[0].fix(101325)
-        m.fs.uv.outlet.temperature[0].fix(temperature)
+        # m.fs.uv.outlet.temperature[0].fix(temperature)
+        @m.fs.uv.Constraint([0])
+        def eq_fix_outlet_temp(blk, t):
+            return blk.control_volume.properties_out[t].temperature == temperature
 
         m.fs.uv.electrical_efficiency_phase_comp[0, "Liq", "tss"].fix(
             0.1 * pyunits.kWh / pyunits.m**3
@@ -539,7 +567,7 @@ def initialize_system(m):
     propagate_state(m.fs.hp_pump_to_RO)
 
     try:
-        m.fs.RO.initialize()
+        m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
     except:
         pass
     propagate_state(m.fs.ro_permeate_to_translator)
@@ -690,7 +718,7 @@ if __name__ == "__main__":
             ro_props="seawater",
             ro_dimension=RO_dim,
             erd_config=ERDtype.no_ERD,
-            uvdimension=uvdimension.zo,
+            uvdimension=uvdimension.zero_d,
             has_aop=True,
             has_measured_vars=has_touched_vars,
             diagnostics_active=diagnostics_flag,
@@ -700,7 +728,7 @@ if __name__ == "__main__":
             ro_props="seawater",
             ro_dimension=RO_dim,
             erd_config=ERDtype.no_ERD,
-            uvdimension=uvdimension.zo,
+            uvdimension=uvdimension.zero_d,
             has_aop=True,
             has_measured_vars=has_touched_vars,
             diagnostics_active=diagnostics_flag,

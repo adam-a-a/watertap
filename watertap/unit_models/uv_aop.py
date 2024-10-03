@@ -29,14 +29,17 @@ from enum import Enum, auto
 
 # Import IDAES cores
 from idaes.core import (
-    ControlVolume0DBlock,
-    declare_process_block_class,
+declare_process_block_class,
+   UnitModelBlockData,
+    useDefault,
     MaterialBalanceType,
     EnergyBalanceType,
     MomentumBalanceType,
-    UnitModelBlockData,
-    useDefault,
 )
+from watertap.core.control_volume_isothermal import (
+    ControlVolume0DBlock,
+
+ )
 from watertap.core.solvers import get_solver
 from idaes.core.util.config import is_physical_parameter_block
 from idaes.core.util.tables import create_stream_table_dataframe
@@ -111,7 +114,7 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
     CONFIG.declare(
         "energy_balance_type",
         ConfigValue(
-            default=EnergyBalanceType.useDefault,
+            default=EnergyBalanceType.none,
             domain=In(EnergyBalanceType),
             description="Energy balance construction flag",
             doc="""Indicates what type of energy balance should be constructed,
@@ -862,7 +865,7 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
         # these variables should have user input, if not there will be a warning
         if iscale.get_scaling_factor(self.uv_intensity) is None:
             sf = iscale.get_scaling_factor(self.uv_intensity, default=0.1, warning=True)
-        iscale.set_scaling_factor(self.uv_intensity, sf)
+            iscale.set_scaling_factor(self.uv_intensity, sf)
 
         if iscale.get_scaling_factor(self.exposure_time) is None:
             sf = iscale.get_scaling_factor(
@@ -872,39 +875,39 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
 
         if iscale.get_scaling_factor(self.uv_dose) is None:
             sf = iscale.get_scaling_factor(self.uv_dose, default=1e-3, warning=True)
-        iscale.set_scaling_factor(self.uv_dose, sf)
+            iscale.set_scaling_factor(self.uv_dose, sf)
 
         if iscale.get_scaling_factor(self.inactivation_rate) is None:
             sf = iscale.get_scaling_factor(
                 self.inactivation_rate, default=1e4, warning=True
             )
-        iscale.set_scaling_factor(self.inactivation_rate, sf)
+            iscale.set_scaling_factor(self.inactivation_rate, sf)
 
         if iscale.get_scaling_factor(self.rate_constant) is None:
             sf = iscale.get_scaling_factor(
                 self.rate_constant, default=1e3, warning=True
             )
-        iscale.set_scaling_factor(self.rate_constant, sf)
+            iscale.set_scaling_factor(self.rate_constant, sf)
 
         if iscale.get_scaling_factor(self.electrical_efficiency_phase_comp) is None:
             sf = iscale.get_scaling_factor(
                 self.electrical_efficiency_phase_comp, default=1e-5, warning=True
             )
-        iscale.set_scaling_factor(self.electrical_efficiency_phase_comp, sf)
+            iscale.set_scaling_factor(self.electrical_efficiency_phase_comp, sf)
 
         if hasattr(self, "photolysis_rate_constant"):
             if iscale.get_scaling_factor(self.photolysis_rate_constant) is None:
                 sf = iscale.get_scaling_factor(
                     self.photolysis_rate_constant, default=1e3, warning=True
                 )
-            iscale.set_scaling_factor(self.photolysis_rate_constant, sf)
+                iscale.set_scaling_factor(self.photolysis_rate_constant, sf)
 
         if hasattr(self, "reaction_rate_constant"):
             if iscale.get_scaling_factor(self.reaction_rate_constant) is None:
                 sf = iscale.get_scaling_factor(
                     self.reaction_rate_constant, default=1e3, warning=True
                 )
-            iscale.set_scaling_factor(self.reaction_rate_constant, sf)
+                iscale.set_scaling_factor(self.reaction_rate_constant, sf)
 
         if hasattr(self, "second_order_reaction_rate_constant"):
             if (
@@ -914,14 +917,14 @@ class Ultraviolet0DData(InitializationMixin, UnitModelBlockData):
                 sf = iscale.get_scaling_factor(
                     self.second_order_reaction_rate_constant, default=1e-8, warning=True
                 )
-            iscale.set_scaling_factor(self.second_order_reaction_rate_constant, sf)
+                iscale.set_scaling_factor(self.second_order_reaction_rate_constant, sf)
 
         if hasattr(self, "hydrogen_peroxide_conc"):
             if iscale.get_scaling_factor(self.hydrogen_peroxide_conc) is None:
                 sf = iscale.get_scaling_factor(
                     self.hydrogen_peroxide_conc, default=1e13, warning=True
                 )
-            iscale.set_scaling_factor(self.hydrogen_peroxide_conc, sf)
+                iscale.set_scaling_factor(self.hydrogen_peroxide_conc, sf)
 
         # these variables do not typically require user input,
         # will not override if the user does provide the scaling factor
