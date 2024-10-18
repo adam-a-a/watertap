@@ -38,15 +38,15 @@ import idaes.logger as idaeslog
 from idaes.core.util.testing import initialization_tester
 
 from watertap.unit_models.translators.translator_asm1_adm1 import Translator_ASM1_ADM1
-from watertap.property_models.anaerobic_digestion.adm1_properties import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_properties import (
     ADM1ParameterBlock,
 )
 
-from watertap.property_models.activated_sludge.asm1_properties import (
+from watertap.property_models.unit_specific.activated_sludge.asm1_properties import (
     ASM1ParameterBlock,
 )
 
-from watertap.property_models.anaerobic_digestion.adm1_reactions import (
+from watertap.property_models.unit_specific.anaerobic_digestion.adm1_reactions import (
     ADM1ReactionParameterBlock,
 )
 
@@ -163,7 +163,7 @@ class TestAsm1Adm1(object):
         assert hasattr(asmadm.fs.unit.outlet, "anions")
         assert hasattr(asmadm.fs.unit.outlet, "cations")
 
-        assert number_variables(asmadm) == 143
+        assert number_variables(asmadm) == 141
         assert number_total_constraints(asmadm) == 34
 
         assert number_unused_variables(asmadm.fs.unit) == 0

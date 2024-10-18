@@ -78,7 +78,7 @@ from idaes.core.util.exceptions import (
 )
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
-from watertap.tools.oli_api.util.watertap_to_oli_helper_functions import (
+from watertap.core.util.chemistry import (
     get_charge,
     get_molar_mass_quantity,
 )
@@ -451,7 +451,7 @@ class MCASParameterData(PhysicalParameterBlock):
 
         if len(track_bad_mw_input) > 0:
             raise ConfigurationError(
-                f"'mw_data' values must either by numeric or None when molecular weight is not applicable. The following inputs should be revised:\n {track_bad_mw_input}"
+                f"'mw_data' values must either be numeric or None when molecular weight is not applicable. The following inputs should be revised:\n {track_bad_mw_input}"
             )
 
         # TODO: consider turning parameters into variables for future param estimation
