@@ -17,11 +17,11 @@ from pyomo.environ import (
     Block,
     Constraint,
     assert_optimal_termination,
+    check_optimal_termination,
     Objective,    
 )
 from pyomo.network import Arc, Port
 from pyomo.util.check_units import assert_units_consistent
-from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
 from idaes.core import FlowsheetBlock, UnitModelBlockData
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
@@ -47,10 +47,12 @@ from watertap.unit_models.reverse_osmosis_0D import (
     MassTransferCoefficient,
     PressureChangeType,
 )
+from watertap.core import ModuleType
+
 from watertap.unit_models.reverse_osmosis_1D import ReverseOsmosis1D
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
-from watertap.examples.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
+from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
     ERDtype,
     erd_type_not_found,
 )
@@ -152,6 +154,8 @@ def main(
         # except:
         #     pass
 
+        setup_optimization(m)
+
         # TODO: handle costing in next PR
         # add_costing(m)
         # assert_degrees_of_freedom(m, 0)
@@ -207,7 +211,7 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop, has_measured
         material_flow_basis=MaterialFlowBasis.mass,
         ignore_neutral_charge=True,
     )
-    m.fs.mcas_props._metadata.add_properties({"pH": {"method": None}})
+    # m.fs.mcas_props._metadata.add_properties({"pH": {"method": None}})
     # Add Database for initially parameterization of ZO models
     m.db = Database()
 
@@ -511,7 +515,7 @@ def set_operating_conditions(m):
     # m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
 
     # Concentrate Separator
-    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(0)
+    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(1e-8)
 
     # RO props to MCAS translator
     m.fs.ro_to_mcas_translator.outlet.pressure[0].fix(pressure_atm)
@@ -558,27 +562,51 @@ def initialize_system(m):
     m.fs.mcas_to_ro_translator.initialize()
 
     propagate_state(m.fs.translator_to_mixer)
-    propagate_state(m.fs.concentrate_to_mixer)
-    m.fs.feed_mixer.initialize()
+
+    master_initialize_with_recirculation(m, count=3)
     
-    propagate_state(m.fs.mixer_to_hp_pump)
-    m.fs.hp_pump.initialize()
+def master_initialize_with_recirculation(m, count):
+    solved = 0 
+    counter = 0
+    while not solved:
+        try:
+            initialize_with_recirculation(m)
+            res= solve(m, tee=True, fail_flag=False)
+        except:
+            pass
+        counter = counter + 1
+        if counter == count:
+            break 
+        if check_optimal_termination(res):
+            solved = 1
+        
 
-    propagate_state(m.fs.hp_pump_to_RO)
+def initialize_with_recirculation(m):
+        propagate_state(m.fs.concentrate_to_mixer)
+        m.fs.feed_mixer.initialize()
+        
+        propagate_state(m.fs.mixer_to_hp_pump)
+        m.fs.hp_pump.initialize()
 
-    try:
-        m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
-    except:
-        pass
-    propagate_state(m.fs.ro_permeate_to_translator)
-    m.fs.ro_to_mcas_translator.initialize()
+        propagate_state(m.fs.hp_pump_to_RO)
 
-    if hasattr(m.fs, "translator_to_uv"):
-        propagate_state(m.fs.translator_to_uv)
-        m.fs.uv.initialize(outlvl=idaeslog.DEBUG)
-        propagate_state(m.fs.uv_to_product)
-    else:
-        propagate_state(m.fs.translator_to_product)
+        try:
+            m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
+        except:
+            pass
+        
+        propagate_state(m.fs.RO_brine_to_splitter)
+        m.fs.concentrate_splitter.initialize()
+        
+        propagate_state(m.fs.ro_permeate_to_translator)
+        m.fs.ro_to_mcas_translator.initialize()
+
+        if hasattr(m.fs, "translator_to_uv"):
+            propagate_state(m.fs.translator_to_uv)
+            m.fs.uv.initialize(outlvl=idaeslog.DEBUG)
+            propagate_state(m.fs.uv_to_product)
+        else:
+            propagate_state(m.fs.translator_to_product)
 
 
 def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
@@ -588,6 +616,13 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
+def setup_optimization(m):
+    # Concentrate Separator
+    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(0.2)
+    
+    master_initialize_with_recirculation(m, 3)
+    # res=solve(m,tee=True)
+    # assert_optimal_termination(res)
 
 def get_uv_model(m, uv_props, dimension, has_aop):
     if dimension == "zo" and not has_aop:
@@ -647,6 +682,8 @@ def get_ro_model(dimension, ro_props):
             pressure_change_type=PressureChangeType.calculated,
             mass_transfer_coefficient=MassTransferCoefficient.calculated,
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            module_type=ModuleType.spiral_wound,
+            has_full_reporting=True,
         )
     else:
         raise ConfigurationError(
@@ -711,8 +748,8 @@ if __name__ == "__main__":
     diagnostics_flag = True
     has_touched_vars=True
     has_sub_jac=False
-    get_jacobian=True
-    RO_dim="1d"
+    get_jacobian=False
+    RO_dim="0d"
     if diagnostics_flag is True:
         m, results, dt = main(
             ro_props="seawater",
@@ -737,6 +774,8 @@ if __name__ == "__main__":
         raise TypeError("diagnostics_flag should be set to True or False.")
 
     if get_jacobian:
+        from pyomo.contrib.pynumero.interfaces.pyomo_nlp import PyomoNLP
+
         m.fs.mf_pump.control_volume
         m.fs.obj = Objective(expr=0)
         nlp = PyomoNLP(m)
