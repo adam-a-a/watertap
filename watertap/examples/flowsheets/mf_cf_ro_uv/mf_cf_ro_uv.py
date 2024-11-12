@@ -742,13 +742,54 @@ def list_stateblocks_on_active_ports(blk):
 #             == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
 #         )
 
+def get_metadata(object_list):
+    """
+    Get doc strings for variables or constraints
+    object_list: var list or constraint list from pyomo NLP
 
+    Return
+    dict with object names to doc string descriptions
+    """
+    obj_docs={}
+
+    for o_string in object_list:
+        
+        # print(o_string)
+        if ']' in o_string:
+            for oi in range(-1,-len(o_string),-1):
+                # print(o_string[oi])
+                if o_string[oi] == '[':
+                    break
+            new_o_string = o_string[:oi]        
+        else:
+            new_o_string = o_string        
+
+
+        print(new_o_string)
+
+        obj = eval('m.'+new_o_string)
+        print(obj.doc)
+
+        obj_dict = {'m.'+new_o_string:obj.doc}
+        obj_docs.update(obj_dict)
+
+    return obj_docs
+
+def write_metadata(object_list, object_descriptor=None):
+    if object_descriptor is None:
+        object_descriptor = "Variable"
+    obj_docs = get_metadata(object_list)
+    import pandas as pd
+    data_dict = {f'{object_descriptor}': [k for k in obj_docs.keys()], f'{object_descriptor} Descriptions': [v for v in obj_docs.values()]}
+
+    df = pd.DataFrame(data_dict)
+    df.to_csv(f'{object_descriptor.lower()}_descriptions.csv', index=False)
 
 if __name__ == "__main__":
     diagnostics_flag = True
     has_touched_vars=True
     has_sub_jac=False
-    get_jacobian=False
+    get_jacobian=True
     RO_dim="0d"
     if diagnostics_flag is True:
         m, results, dt = main(
@@ -789,7 +830,35 @@ if __name__ == "__main__":
             msg= "_with_touched_vars"
         else:
             msg = ""    
-        df.to_csv(f'ro{RO_dim}_pilot_jacobian{msg}.csv')
+        df.to_csv(f'ro{RO_dim}_pilot_FULL_jacobian{msg}.csv')
+
+        #%% Write csvs for variable and constraint metadata (doc strings)
+        write_metadata(con_list, "Constraint")
+        # var_docs={}
+        # con_docs={}
+        # for v_string in var_list:
+            
+        #     # print(v_string)
+        #     if ']' in v_string:
+        #         for vi in range(-1,-len(v_string),-1):
+        #             # print(v_string[vi])
+        #             if v_string[vi] == '[':
+        #                 break
+        #         new_v_string = v_string[:vi]        
+        #     else:
+        #         new_v_string = v_string        
+
+
+        #     print(new_v_string)
+
+        #     var = eval('m.'+new_v_string)
+        #     print(var.doc)
+
+
+        #     var_dict = {'m.'+new_v_string:var.doc}
+        #     var_docs.update(var_dict)
+
+
 
         if has_sub_jac:
 
