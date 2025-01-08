@@ -140,21 +140,22 @@ def main(
     if diagnostics_active:
         results = {}
 
-        # try:
-        assert_degrees_of_freedom(m, 0)
-        assert_units_consistent(m)
-        initialize_system(m)
-        assert_degrees_of_freedom(m, 0)
-        if diagnostics_active:
-            dt.report_numerical_issues()
-        results = solve(m, tee=True, checkpoint="solve flowsheet after initializing system")
-        assert_optimal_termination(results)
-        display_results(m)
-        m.fs.stream_table()
-        # except:
-        #     pass
+        try:
+            assert_degrees_of_freedom(m, 0)
+            assert_units_consistent(m)
+            initialize_system(m)
+            assert_degrees_of_freedom(m, 0)
+            if diagnostics_active:
+                dt.report_numerical_issues()
+            results = solve(m, tee=True, checkpoint="solve flowsheet after initializing system")
+            assert_optimal_termination(results)
+            display_results(m)
+            m.fs.stream_table()
+            setup_optimization(m)
 
-        setup_optimization(m)
+        except:
+            pass
+
 
         # TODO: handle costing in next PR
         # add_costing(m)
@@ -417,10 +418,10 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop, has_measured
     # scaling
     # set default property values
     m.fs.ro_props.set_default_scaling(
-        "flow_mass_phase_comp", 1e0, index=("Liq", "H2O")
+        "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
     )
     m.fs.ro_props.set_default_scaling(
-        "flow_mass_phase_comp", 1e2, index=("Liq", m.fs.ro_ion)
+        "flow_mass_phase_comp", 1e4, index=("Liq", m.fs.ro_ion)
     )
     # if m.fs.uv is not None:
     #     iscale.set_scaling_factor(m.fs.uv.control_volume.properties_in[0].flow_mass_phase_comp['Liq', 'tss'], 1e3)
@@ -435,13 +436,13 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop, has_measured
 def set_operating_conditions(m):
     # ---specifications---
     # feed
-    flow_vol = 0.3092 * pyunits.m**3 / pyunits.s
-    conc_mass_tds = 35 * pyunits.kg / pyunits.m**3
+    flow_vol = 3.703e-4 #* pyunits.gallon / pyunits.min
+    conc_mass_tds = 1.402 * pyunits.kg / pyunits.m**3
     conc_mass_tss = 0.03 * pyunits.kg / pyunits.m**3
     temperature = 298 * pyunits.K
     pressure = 1e5 * pyunits.Pa
-    mf_and_cf_pump_discharge_pressures= 2e5* pyunits.Pa
-    hp_discharge_pressure = 70e5* pyunits.Pa
+    mf_and_cf_pump_discharge_pressures= 2.55e5* pyunits.Pa
+    hp_discharge_pressure = 12.76e5* pyunits.Pa
     pressure_atm =101325* pyunits.Pa
     m.fs.feed.temperature[0].fix(temperature)
     m.fs.feed.pressure[0].fix(pressure)
@@ -501,13 +502,16 @@ def set_operating_conditions(m):
     
     # RO
     #TODO: update A, B, channel height, porosity, area, width (others?)
-    m.fs.RO.A_comp.fix(4.2e-12)  # membrane water permeability coefficient [m/s-Pa]
-    m.fs.RO.B_comp.fix(3.5e-8)  # membrane salt permeability coefficient [m/s]
-    m.fs.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
-    m.fs.RO.feed_side.spacer_porosity.fix(0.75)  # spacer porosity in membrane stage [-]
-    m.fs.RO.width.fix(1000)  # stage width [m]
-    m.fs.RO.area.fix(flow_vol * 4.5e4 * pyunits.s / pyunits.m)
-   
+    m.fs.RO.A_comp.fix(1.2e-11)  # membrane water permeability coefficient [m/s-Pa]
+    m.fs.RO.B_comp.fix(6.7e-8)  # membrane salt permeability coefficient [m/s]
+    if hasattr(m.fs.RO.feed_side, 'channel_height'):
+        m.fs.RO.feed_side.channel_height.fix(34e-3*pyunits.inch)  # channel height in membrane stage [m]
+    if hasattr(m.fs.RO.feed_side,'spacer_porosity'):
+        m.fs.RO.feed_side.spacer_porosity.fix(0.75)  # spacer porosity in membrane stage [-]
+    # m.fs.RO.width.fix(1000)  # stage width [m]
+    m.fs.RO.area.fix(7.2*4)
+    m.fs.RO.deltaP.fix(-0.75e5)
+    # m.fs.RO.length(4*(1.016-2*26.7e-3))
     @m.fs.RO.Constraint([0])
     def eq_fix_RO_perm_pressure(blk, t):
         return blk.permeate.pressure[t] == pressure_atm
@@ -562,8 +566,8 @@ def initialize_system(m):
     m.fs.mcas_to_ro_translator.initialize()
 
     propagate_state(m.fs.translator_to_mixer)
-
-    master_initialize_with_recirculation(m, count=3)
+    initialize_with_recirculation(m)
+    # master_initialize_with_recirculation(m, count=3)
     
 def master_initialize_with_recirculation(m, count):
     solved = 0 
@@ -590,10 +594,10 @@ def initialize_with_recirculation(m):
 
         propagate_state(m.fs.hp_pump_to_RO)
 
-        try:
-            m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
-        except:
-            pass
+        # try:
+        m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
+        # except:
+        #     pass
         
         propagate_state(m.fs.RO_brine_to_splitter)
         m.fs.concentrate_splitter.initialize()
@@ -670,18 +674,19 @@ def get_ro_model(dimension, ro_props):
         return ReverseOsmosis0D(
             property_package=ro_props,
             has_pressure_change=True,
-            pressure_change_type=PressureChangeType.calculated,
-            mass_transfer_coefficient=MassTransferCoefficient.calculated,
-            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            pressure_change_type=PressureChangeType.fixed_per_stage,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
+            concentration_polarization_type=ConcentrationPolarizationType.none,
+            module_type=ModuleType.spiral_wound,
             has_full_reporting=True,
         )
     elif dimension == rodimension.one_d:
         return ReverseOsmosis1D(
             property_package=ro_props,
             has_pressure_change=True,
-            pressure_change_type=PressureChangeType.calculated,
-            mass_transfer_coefficient=MassTransferCoefficient.calculated,
-            concentration_polarization_type=ConcentrationPolarizationType.calculated,
+            pressure_change_type=PressureChangeType.fixed_per_stage,
+            mass_transfer_coefficient=MassTransferCoefficient.none,
+            concentration_polarization_type=ConcentrationPolarizationType.none,
             module_type=ModuleType.spiral_wound,
             has_full_reporting=True,
         )
