@@ -675,8 +675,8 @@ def get_ro_model(dimension, ro_props):
             property_package=ro_props,
             has_pressure_change=True,
             pressure_change_type=PressureChangeType.fixed_per_stage,
-            mass_transfer_coefficient=MassTransferCoefficient.none,
-            concentration_polarization_type=ConcentrationPolarizationType.none,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
             module_type=ModuleType.spiral_wound,
             has_full_reporting=True,
         )
@@ -685,8 +685,8 @@ def get_ro_model(dimension, ro_props):
             property_package=ro_props,
             has_pressure_change=True,
             pressure_change_type=PressureChangeType.fixed_per_stage,
-            mass_transfer_coefficient=MassTransferCoefficient.none,
-            concentration_polarization_type=ConcentrationPolarizationType.none,
+            mass_transfer_coefficient=MassTransferCoefficient.calculated,
+            concentration_polarization_type=ConcentrationPolarizationType.calculated,
             module_type=ModuleType.spiral_wound,
             has_full_reporting=True,
         )
@@ -794,15 +794,19 @@ if __name__ == "__main__":
     diagnostics_flag = True
     has_touched_vars=True
     has_sub_jac=False
-    get_jacobian=True
-    RO_dim="0d"
+    get_jacobian=False
+    RO_dim="1d"
+    uv_dim=uvdimension.zero_d
+    ERD_conf= ERDtype.no_ERD
+    has_aop=True
+
     if diagnostics_flag is True:
         m, results, dt = main(
             ro_props="seawater",
             ro_dimension=RO_dim,
-            erd_config=ERDtype.no_ERD,
-            uvdimension=uvdimension.zero_d,
-            has_aop=True,
+            erd_config=ERD_conf,
+            uvdimension=uv_dim,
+            has_aop=has_aop,
             has_measured_vars=has_touched_vars,
             diagnostics_active=diagnostics_flag,
         )
@@ -810,9 +814,9 @@ if __name__ == "__main__":
         m, results = main(
             ro_props="seawater",
             ro_dimension=RO_dim,
-            erd_config=ERDtype.no_ERD,
-            uvdimension=uvdimension.zero_d,
-            has_aop=True,
+            erd_config=ERD_conf,
+            uvdimension=uv_dim,
+            has_aop=has_aop,
             has_measured_vars=has_touched_vars,
             diagnostics_active=diagnostics_flag,
         )
