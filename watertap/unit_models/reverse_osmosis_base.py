@@ -21,6 +21,7 @@ from pyomo.environ import (
     check_optimal_termination,
     exp,
     units as pyunits,
+    value
 )
 from idaes.core import UnitModelBlockData
 from watertap.core.solvers import get_solver
@@ -639,13 +640,26 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
 
         # Solve unit
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-            res = opt.solve(self, tee=slc.tee)
-            # occasionally it might be worth retrying a solve
-            if not check_optimal_termination(res):
-                init_log.warning(
-                    f"Trouble solving unit model {self.name}, trying one more time"
-                )
+            try:
                 res = opt.solve(self, tee=slc.tee)
+
+                # occasionally it might be worth retrying a solve
+                if not check_optimal_termination(res):
+                    init_log.warning(
+                        f"Trouble solving unit model {self.name}, trying one more time"
+                    )
+            except ValueError as e:
+                init_log.info_high(f"Initialization Step 2 failed.\n {e}")
+                init_log.warning(
+                        f"Trouble solving unit model {self.name}, trying one more time"
+                    )
+                try:
+                    res = opt.solve(self, tee=slc.tee)
+                except ValueError as e:
+                    init_log.info_high(f"Initialization Step 2 failed.\n {e}")
+                    self.feed_side.release_state(source_flags, outlvl)
+                    init_log.info("RO solve failed during initialization. Released state.")
+                    raise e
         init_log.info_high(f"Initialization Step 2 {idaeslog.condition(res)}")
         # release inlet state, in case this error is caught
 
@@ -810,11 +824,13 @@ class ReverseOsmosisBaseData(InitializationMixin, UnitModelBlockData):
             sf = iscale.get_scaling_factor(self.area, default=10, warning=True)
             iscale.set_scaling_factor(self.area, sf)
 
-        if iscale.get_scaling_factor(self.A_comp) is None:
-            iscale.set_scaling_factor(self.A_comp, 1e12)
+        for v in self.A_comp.values():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1/value(v))
 
-        if iscale.get_scaling_factor(self.B_comp) is None:
-            iscale.set_scaling_factor(self.B_comp, 1e8)
+        for v in self.B_comp.values():
+            if iscale.get_scaling_factor(v) is None:
+                iscale.set_scaling_factor(v, 1/value(v))
 
         if iscale.get_scaling_factor(self.recovery_vol_phase) is None:
             iscale.set_scaling_factor(self.recovery_vol_phase, 1)

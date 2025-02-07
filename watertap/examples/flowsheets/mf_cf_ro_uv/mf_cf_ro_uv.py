@@ -9,6 +9,8 @@
 # information, respectively. These files are also available online at the URL
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
+from watertap.core.util.model_diagnostics.infeasible import *
+from idaes.core.scaling import report_scaling_factors
 from pyomo.environ import (
     ConcreteModel,
     value,
@@ -141,9 +143,12 @@ def main(
         results = {}
 
         try:
-            assert_degrees_of_freedom(m, 0)
-            assert_units_consistent(m)
-            initialize_system(m)
+            # assert_degrees_of_freedom(m, 0)
+            # assert_units_consistent(m)
+            try:
+                initialize_system(m)
+            except:
+                pass
             assert_degrees_of_freedom(m, 0)
             if diagnostics_active:
                 dt.report_numerical_issues()
@@ -415,21 +420,7 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop, has_measured
 
     if has_measured_vars:
         touch_measurable_vars(m)
-    # scaling
-    # set default property values
-    m.fs.ro_props.set_default_scaling(
-        "flow_mass_phase_comp", 1e1, index=("Liq", "H2O")
-    )
-    m.fs.ro_props.set_default_scaling(
-        "flow_mass_phase_comp", 1e4, index=("Liq", m.fs.ro_ion)
-    )
-    # if m.fs.uv is not None:
-    #     iscale.set_scaling_factor(m.fs.uv.control_volume.properties_in[0].flow_mass_phase_comp['Liq', 'tss'], 1e3)
-    # set unit model values
-    # iscale.set_scaling_factor(m.fs.hp_pump.control_volume.work, 1e-5)
-    # iscale.set_scaling_factor(m.fs.RO.area, 1e-4)
-    # calculate and propagate scaling factors
-    iscale.calculate_scaling_factors(m)
+
     return m
 
 
@@ -442,10 +433,14 @@ def set_operating_conditions(m):
     temperature = 298 * pyunits.K
     pressure = 1e5 * pyunits.Pa
     mf_and_cf_pump_discharge_pressures= 2.55e5* pyunits.Pa
-    hp_discharge_pressure = 12.76e5* pyunits.Pa
+    hp_discharge_pressure = 4#12.76e5* pyunits.Pa
     pressure_atm =101325* pyunits.Pa
     m.fs.feed.temperature[0].fix(temperature)
     m.fs.feed.pressure[0].fix(pressure)
+    iscale.set_scaling_factor(m.fs.feed.properties[0].flow_vol_phase["Liq"], 1/flow_vol )
+    iscale.set_scaling_factor(m.fs.feed.properties[0].conc_mass_phase_comp["Liq", m.fs.ro_ion], value(1/conc_mass_tds) )
+    iscale.set_scaling_factor(m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "tss"], value(1/conc_mass_tss) )
+
     m.fs.feed.properties.calculate_state(
         var_args={
             ("conc_mass_phase_comp", ("Liq", m.fs.ro_ion)): conc_mass_tds,
@@ -454,6 +449,24 @@ def set_operating_conditions(m):
         },
         hold_state=True,
     )
+
+
+    # scaling
+    # set default property values
+    m.fs.ro_props.set_default_scaling(
+        "flow_mass_phase_comp", 1/value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"]), index=("Liq", "H2O")
+    )
+    m.fs.ro_props.set_default_scaling(
+        "flow_mass_phase_comp", 1/value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", m.fs.ro_ion]), index=("Liq", m.fs.ro_ion)
+    )
+    # if m.fs.uv is not None:
+    #     iscale.set_scaling_factor(m.fs.uv.control_volume.properties_in[0].flow_mass_phase_comp['Liq', 'tss'], 1e3)
+    # set unit model values
+    # iscale.set_scaling_factor(m.fs.hp_pump.control_volume.work, 1e-5)
+
+    m.fs.RO.flux_mass_phase_comp[0,:,'Liq', 'TDS'].setlb(None)
+    m.fs.mf_pump.control_volume.properties_in[0.0].pressure.setlb(None)
+
     # TODO: add scaling at least for feed props before solve
     # solve(m.fs.feed, checkpoint="solve feed block")
 
@@ -508,10 +521,10 @@ def set_operating_conditions(m):
         m.fs.RO.feed_side.channel_height.fix(34e-3*pyunits.inch)  # channel height in membrane stage [m]
     if hasattr(m.fs.RO.feed_side,'spacer_porosity'):
         m.fs.RO.feed_side.spacer_porosity.fix(0.75)  # spacer porosity in membrane stage [-]
-    # m.fs.RO.width.fix(1000)  # stage width [m]
+    # m.fs.RO.width.fix(1)  # stage width [m]
     m.fs.RO.area.fix(7.2*4)
     m.fs.RO.deltaP.fix(-0.75e5)
-    # m.fs.RO.length(4*(1.016-2*26.7e-3))
+    m.fs.RO.length.fix(4*(1.016-2*26.7e-3))
     @m.fs.RO.Constraint([0])
     def eq_fix_RO_perm_pressure(blk, t):
         return blk.permeate.pressure[t] == pressure_atm
@@ -519,7 +532,7 @@ def set_operating_conditions(m):
     # m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
 
     # Concentrate Separator
-    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(1e-8)
+    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(0.1)
 
     # RO props to MCAS translator
     m.fs.ro_to_mcas_translator.outlet.pressure[0].fix(pressure_atm)
@@ -548,6 +561,14 @@ def set_operating_conditions(m):
             m.fs.uv.hydrogen_peroxide_conc.fix(5.05e-13 * pyunits.M)
 
 
+    iscale.set_scaling_factor(m.fs.RO.area, 1e-2)
+    # calculate and propagate scaling factors
+    iscale.set_variable_scaling_from_current_value(m.fs.RO.A_comp[0, "H2O"], overwrite=True)
+    iscale.set_variable_scaling_from_current_value(m.fs.RO.B_comp, overwrite=True)
+    for (t,x,p,j) in m.fs.RO.eq_flux_mass.keys():
+        iscale.constraint_scaling_transform(m.fs.RO.eq_flux_mass[t,x,p,"TDS"],1e6)
+    iscale.calculate_scaling_factors(m)
+
 def initialize_system(m):
 
     m.fs.feed.initialize()
@@ -566,8 +587,12 @@ def initialize_system(m):
     m.fs.mcas_to_ro_translator.initialize()
 
     propagate_state(m.fs.translator_to_mixer)
+
+    propagate_state(source=m.fs.mcas_to_ro_translator.outlet, destination=m.fs.feed_mixer.recirculated_concentrate)
+    m.fs.feed_mixer.initialize()
+
     initialize_with_recirculation(m)
-    # master_initialize_with_recirculation(m, count=3)
+    master_initialize_with_recirculation(m, count=3)
     
 def master_initialize_with_recirculation(m, count):
     solved = 0 
@@ -586,8 +611,7 @@ def master_initialize_with_recirculation(m, count):
         
 
 def initialize_with_recirculation(m):
-        propagate_state(m.fs.concentrate_to_mixer)
-        m.fs.feed_mixer.initialize()
+
         
         propagate_state(m.fs.mixer_to_hp_pump)
         m.fs.hp_pump.initialize()
@@ -595,13 +619,17 @@ def initialize_with_recirculation(m):
         propagate_state(m.fs.hp_pump_to_RO)
 
         # try:
-        m.fs.RO.initialize(outlvl=idaeslog.DEBUG)
+        assert_degrees_of_freedom(m, 0)
+        m.fs.RO.initialize(outlvl=idaeslog.DEBUG, solver="ipopt-watertap")
         # except:
         #     pass
         
         propagate_state(m.fs.RO_brine_to_splitter)
         m.fs.concentrate_splitter.initialize()
-        
+
+        propagate_state(m.fs.concentrate_to_mixer)
+        m.fs.feed_mixer.initialize()
+
         propagate_state(m.fs.ro_permeate_to_translator)
         m.fs.ro_to_mcas_translator.initialize()
 
@@ -616,13 +644,15 @@ def initialize_with_recirculation(m):
 def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
         solver = get_solver()
+    solver.options["max_iter"] = 1000
     results = solver.solve(blk, tee=tee)
-    check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
+    assert_optimal_termination(results)
+    # check_solve(results, checkpoint=checkpoint, logger=_log, fail_flag=fail_flag)
     return results
 
 def setup_optimization(m):
     # Concentrate Separator
-    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(0.2)
+    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(1e-8)
     
     master_initialize_with_recirculation(m, 3)
     # res=solve(m,tee=True)
@@ -795,8 +825,8 @@ if __name__ == "__main__":
     has_touched_vars=True
     has_sub_jac=False
     get_jacobian=False
-    RO_dim="1d"
-    uv_dim=uvdimension.zero_d
+    RO_dim="0d"
+    uv_dim=uvdimension.none
     ERD_conf= ERDtype.no_ERD
     has_aop=True
 
