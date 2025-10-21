@@ -147,7 +147,9 @@ def main(
             # assert_units_consistent(m)
             try:
                 initialize_system(m)
-            except:
+            except Exception as e:
+                _log.warning(e)
+                raise
                 pass
             assert_degrees_of_freedom(m, 0)
             if diagnostics_active:
@@ -250,7 +252,7 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop, has_measured
 
     # Add Mixer for concentrate recirculation
     m.fs.feed_mixer = Mixer(property_package=m.fs.ro_props,
-                            # momentum_mixing_type=MomentumMixingType.equality,
+                            momentum_mixing_type=MomentumMixingType.minimize,
                             inlet_list=["cf_effluent", "recirculated_concentrate"]) 
     # RO Train =====================================================================
     # High-pressure RO pump
@@ -433,7 +435,7 @@ def set_operating_conditions(m):
     temperature = 298 * pyunits.K
     pressure = 1e5 * pyunits.Pa
     mf_and_cf_pump_discharge_pressures= 2.55e5* pyunits.Pa
-    hp_discharge_pressure = 4#12.76e5* pyunits.Pa
+    hp_discharge_pressure = 4e5 * pyunits.Pa#12.76e5* pyunits.Pa
     pressure_atm =101325* pyunits.Pa
     m.fs.feed.temperature[0].fix(temperature)
     m.fs.feed.pressure[0].fix(pressure)
@@ -719,6 +721,8 @@ def get_ro_model(dimension, ro_props):
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             module_type=ModuleType.spiral_wound,
             has_full_reporting=True,
+            finite_elements=10,
+
         )
     else:
         raise ConfigurationError(
@@ -821,14 +825,14 @@ def write_metadata(object_list, object_descriptor=None):
     df.to_csv(f'{object_descriptor.lower()}_descriptions.csv', index=False)
 
 if __name__ == "__main__":
-    diagnostics_flag = True
+    diagnostics_flag = False
     has_touched_vars=True
     has_sub_jac=False
     get_jacobian=False
-    RO_dim="0d"
+    RO_dim="1d"
     uv_dim=uvdimension.none
     ERD_conf= ERDtype.no_ERD
-    has_aop=True
+    has_aop=False
 
     if diagnostics_flag is True:
         m, results, dt = main(
