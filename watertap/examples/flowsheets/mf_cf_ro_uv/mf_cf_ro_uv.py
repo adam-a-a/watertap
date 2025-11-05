@@ -429,12 +429,12 @@ def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop, has_measured
 def set_operating_conditions(m):
     # ---specifications---
     # feed
-    flow_vol = 3.703e-4 #* pyunits.gallon / pyunits.min
+    flow_vol =  value(pyunits.convert(8*pyunits.gallon / pyunits.min, to_units=pyunits.m**3/pyunits.s))#3.703e-4 #* pyunits.gallon / pyunits.min
     conc_mass_tds = 1.402 * pyunits.kg / pyunits.m**3
     conc_mass_tss = 0.03 * pyunits.kg / pyunits.m**3
     temperature = 298 * pyunits.K
     pressure = 1e5 * pyunits.Pa
-    mf_and_cf_pump_discharge_pressures= 2.55e5* pyunits.Pa
+    mf_and_cf_pump_discharge_pressures= 60* pyunits.psi# 2.55e5* pyunits.Pa
     hp_discharge_pressure = 4e5 * pyunits.Pa#12.76e5* pyunits.Pa
     pressure_atm =101325* pyunits.Pa
     m.fs.feed.temperature[0].fix(temperature)
@@ -475,10 +475,11 @@ def set_operating_conditions(m):
     # ---pretreatment---
     # TODO: add option to eliminate underlying fixed energy calculations and shift to pump
     # mf pump
-    m.fs.mf_pump.efficiency_pump.fix(0.8)
-    mf_dP=mf_and_cf_pump_discharge_pressures-pressure
-    m.fs.mf_pump.control_volume.deltaP[0].fix(mf_dP)
-    # m.fs.mf_pump.control_volume.properties_out[0].pressure.fix(2e5)
+    # m.fs.mf_pump.efficiency_pump.fix(0.8)
+    m.fs.mf_pump.work_mechanical[0].fix(0.75*pyunits.hp)
+    # mf_dP=mf_and_cf_pump_discharge_pressures-pressure
+    # m.fs.mf_pump.control_volume.deltaP[0].fix(mf_dP)
+    m.fs.mf_pump.control_volume.properties_out[0].pressure.fix(mf_and_cf_pump_discharge_pressures)
 
     # microfiltration
     m.db.get_unit_operation_parameters("microfiltration")
