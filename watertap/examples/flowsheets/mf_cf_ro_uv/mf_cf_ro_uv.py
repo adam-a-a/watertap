@@ -21,11 +21,13 @@ from pyomo.environ import (
     assert_optimal_termination,
     check_optimal_termination,
     Objective,    
+    Param,
+    Expression,
 )
 from pyomo.network import Arc, Port
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core import FlowsheetBlock, UnitModelBlockData
-from idaes.core.solvers import get_solver
+from watertap_solvers import get_solver
 from idaes.core.util.initialization import propagate_state
 from idaes.core.util import DiagnosticsToolbox
 
@@ -82,7 +84,9 @@ from watertap.unit_models.zero_order import (
 # from watertap.costing.zero_order_costing import ZeroOrderCosting
 # from watertap.costing import WaterTAPCosting
 from idaes.core.util.misc import StrEnum
-
+from idaes.core.base.costing_base import register_idaes_currency_units
+from watertap_solvers.model_debug_mode import activate
+activate()
 __author__ = "Adam Atia"
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -197,7 +201,241 @@ def main(
     return m, results
 
 
-def build(ro_props, ro_dimension, erd_config, uvdimension, has_aop, has_measured_vars):
+def build_flowsheet(m,ro_props="Seawater", ro_dimension="1d", erd_config=ERDtype.no_ERD, uvdimension=uvdimension.none, has_aop=False, has_measured_vars=True):
+    """
+    ro_props: choose between "NaCl" and "Seawater" prop models for RO
+    ro_dimension: choose between 0d, 1d
+    """
+    # flowsheet set up
+    # m = ConcreteModel()
+    m.fs = FlowsheetBlock(dynamic=False)
+
+    # Property Models: MCAS and either NaCl/Seawater
+
+    # Choose between NaCl or Seawater prop models for RO
+    m.fs.ro_props, m.fs.ro_ion = get_ro_props(ro_props)
+
+    # Use MCAS for whole flowsheet, except RO
+    m.fs.mcas_props = MCASParameterBlock(
+        solute_list=[m.fs.ro_ion, "tss"],
+        diffusivity_data={("Liq", m.fs.ro_ion): 1e-9, ("Liq", "tss"): 1e-9},
+        mw_data={m.fs.ro_ion: None, "tss": None},
+        material_flow_basis=MaterialFlowBasis.mass,
+        ignore_neutral_charge=True,
+    )
+    # m.fs.mcas_props._metadata.add_properties({"pH": {"method": None}})
+    # Add Database for initially parameterization of ZO models
+    m.db = Database()
+
+    # Feed block
+    m.fs.feed = Feed(property_package=m.fs.mcas_props)
+
+    # Microfiltration Pump
+    m.fs.mf_pump = Pump(property_package=m.fs.mcas_props)
+
+    # Microfiltration
+    m.fs.mf = MicroFiltrationZO(property_package=m.fs.mcas_props, database=m.db)
+
+    # Cartridge Filtration Pump
+    m.fs.cf_pump = Pump(property_package=m.fs.mcas_props)
+
+    # CF
+    m.fs.cf = CartridgeFiltrationZO(property_package=m.fs.mcas_props, database=m.db)
+
+    # Translate MCAS to RO property model
+    m.fs.mcas_to_ro_translator = Translator(
+        inlet_property_package=m.fs.mcas_props, outlet_property_package=m.fs.ro_props
+    )
+
+    @m.fs.mcas_to_ro_translator.Constraint(m.fs.ro_props.component_list)
+    def eq_flow_mass_comp(blk, j):
+        return (
+            blk.properties_in[0].flow_mass_phase_comp["Liq", j]
+            == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
+        )
+
+    # Add Mixer for concentrate recirculation
+    m.fs.feed_mixer = Mixer(property_package=m.fs.ro_props,
+                            momentum_mixing_type=MomentumMixingType.minimize,
+                            inlet_list=["cf_effluent", "recirculated_concentrate"]) 
+    # RO Train =====================================================================
+    # High-pressure RO pump
+    m.fs.hp_pump = Pump(property_package=m.fs.ro_props)
+
+    # --- Reverse Osmosis Block ---
+    m.fs.RO = get_ro_model(dimension=ro_dimension, ro_props=m.fs.ro_props)
+
+    # --- ERD blocks ---
+    if erd_config == ERDtype.pressure_exchanger:
+        m.fs.feed_to_hp_and_erd_splitter = Separator(
+            property_package=m.fs.ro_props, outlet_list=["hp_pump", "erd"]
+        )
+
+        m.fs.erd = PressureExchanger(property_package=m.fs.ro_props)
+        m.fs.booster_pump = Pump(property_package=m.fs.ro_props)
+        m.fs.hp_and_booster_mixer = Mixer(
+            property_package=m.fs.ro_props,
+            momentum_mixing_type=MomentumMixingType.equality,
+            inlet_list=["hp_pump", "booster_pump"],
+        )
+
+    elif erd_config == ERDtype.pump_as_turbine:
+        # add energy recovery turbine block
+        m.fs.erd = EnergyRecoveryDevice(property_package=m.fs.ro_props)
+
+    elif erd_config == ERDtype.no_ERD:
+        pass
+    else:
+        erd_type_not_found(erd_config)
+    # ===============================================================================
+    # Add splitter for recirculated concentrate and waste concentrate
+    m.fs.concentrate_splitter = Separator(property_package=m.fs.ro_props, outlet_list=["recirculated_concentrate", "waste_brine"])
+
+
+    # Translate RO to MCAS property model
+    m.fs.ro_to_mcas_translator = Translator(
+        inlet_property_package=m.fs.ro_props, outlet_property_package=m.fs.mcas_props
+    )
+
+    #TODO: this seems incorrect since translator connects to permeate and TSS shouldn't end up there
+    @m.fs.ro_to_mcas_translator.Constraint(m.fs.mcas_props.component_list)
+    def eq_flow_mass_comp(blk, j):
+        if j.lower() == "tss":
+            blk.properties_out[0].flow_mass_phase_comp["Liq", j].fix(0)
+            return Constraint.Skip
+        else:
+            return (
+                blk.properties_in[0].flow_mass_phase_comp["Liq", j]
+                == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
+            )
+
+    # UV
+    # TODO: Add UV as an option: None, UV, UV-AOP, UVZO, UVAOPZO?
+    m.fs.uv = get_uv_model(
+        m, uv_props=m.fs.mcas_props, dimension=uvdimension, has_aop=has_aop
+    )
+
+    # Product blocks for permeate and disposal
+    m.fs.product_water = Product(property_package=m.fs.mcas_props)
+    m.fs.waste_brine = Product(property_package=m.fs.ro_props)
+    # TODO: consider adding mixer to collect MF, CF, and RO waste streams and send to drain (Product block)
+
+    # connections
+    m.fs.feed_to_mf_pump = Arc(source=m.fs.feed.outlet, destination=m.fs.mf_pump.inlet)
+    m.fs.mf_pump_to_mf = Arc(source=m.fs.mf_pump.outlet, destination=m.fs.mf.inlet)
+    m.fs.mf_to_cf_pump = Arc(source=m.fs.mf.treated, destination=m.fs.cf_pump.inlet)
+    m.fs.cf_pump_to_cf = Arc(source=m.fs.cf_pump.outlet, destination=m.fs.cf.inlet)
+    m.fs.cf_to_translator = Arc(
+        source=m.fs.cf.treated, destination=m.fs.mcas_to_ro_translator.inlet
+    )
+
+    if erd_config == ERDtype.pressure_exchanger:
+        raise NotImplementedError(
+            f"While arc connections are ready, setting up the square problem (setting DOF=0) has not been completed for erd_config={erd_config}"
+        )
+
+    elif erd_config == ERDtype.pump_as_turbine:
+        raise NotImplementedError(
+            f"While arc connections are ready, setting up the square problem (setting DOF=0) has not been completed for erd_config={erd_config}"
+        )
+
+    elif erd_config == ERDtype.no_ERD:
+
+        m.fs.translator_to_mixer = Arc(
+            source=m.fs.mcas_to_ro_translator.outlet, destination=m.fs.feed_mixer.cf_effluent)
+        m.fs.mixer_to_hp_pump = Arc(
+            source=m.fs.feed_mixer.outlet, destination=m.fs.hp_pump.inlet)
+        m.fs.hp_pump_to_RO = Arc(source=m.fs.hp_pump.outlet, destination=m.fs.RO.inlet)
+        m.fs.RO_brine_to_splitter = Arc(
+            source=m.fs.RO.retentate, destination=m.fs.concentrate_splitter.inlet
+        )
+        m.fs.concentrate_to_mixer = Arc(source=m.fs.concentrate_splitter.recirculated_concentrate, destination=m.fs.feed_mixer.recirculated_concentrate)
+        m.fs.concentrate_to_waste = Arc(source=m.fs.concentrate_splitter.waste_brine, destination=m.fs.waste_brine.inlet)
+ 
+    else:
+        # this case should be caught in the previous conditional
+        erd_type_not_found(erd_config)
+
+    m.fs.ro_permeate_to_translator = Arc(
+        source=m.fs.RO.permeate, destination=m.fs.ro_to_mcas_translator.inlet
+    )
+    # TODO: UV conditionals to determine RO permeate connections
+    if uvdimension == uvdimension.none:
+        m.fs.translator_to_product = Arc(
+            source=m.fs.ro_to_mcas_translator.outlet,
+            destination=m.fs.product_water.inlet,
+        )
+    elif uvdimension == uvdimension.zo:
+        m.fs.translator_to_uv = Arc(
+            source=m.fs.ro_to_mcas_translator.outlet, destination=m.fs.uv.inlet
+        )
+        m.fs.uv_to_product = Arc(
+            source=m.fs.uv.treated, destination=m.fs.product_water.inlet
+        )
+    elif uvdimension == uvdimension.zero_d:
+        m.fs.translator_to_uv = Arc(
+            source=m.fs.ro_to_mcas_translator.outlet, destination=m.fs.uv.inlet
+        )
+        m.fs.uv_to_product = Arc(
+            source=m.fs.uv.outlet, destination=m.fs.product_water.inlet
+        )
+    else:
+        raise NotImplementedError("This config isn't available.")
+    # Apply connections
+    TransformationFactory("network.expand_arcs").apply_to(m)
+
+    if has_measured_vars:
+        touch_measurable_vars(m)
+
+    m.fs.base_power_consumption = Param(initialize=125,units=pyunits.W, mutable=True,doc="Baseline parasitic power with pumps off")
+    m.fs.power_consumption = Expression(expr=m.fs.base_power_consumption + m.fs.mf_pump.work_mechanical[0] + m.fs.cf_pump.work_mechanical[0]+m.fs.hp_pump.work_mechanical[0])
+    
+
+    register_idaes_currency_units()
+    m.fs.LMP = Param(
+    initialize=0,
+    units=pyunits.USD_2023/pyunits.kWh,
+    mutable=True,
+    doc="Locational marginal price of electricity [$/kWh]",)
+
+    m.fs.energy_cost = Expression(expr=pyunits.convert(m.fs.power_consumption,to_units=pyunits.kW)*pyunits.hour*m.fs.LMP)
+
+    set_operating_conditions(m)
+
+    initialize_system(m)
+
+    res=solve(m,tee=True)
+    assert_optimal_termination(res)
+    assert_degrees_of_freedom(m,0)
+    setup_optimization_for_pricetaker(m)
+    return m
+
+def setup_optimization_for_pricetaker(m):
+    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].unfix()
+    
+    # Unfix feed mass flowrates and fix mass concentrations only, leaving volumetric flow free
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "TDS"].fix()
+    m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "tss"].fix()
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].unfix()
+    m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "tss"].unfix()
+    flow_vol =  value(pyunits.convert(8*pyunits.gallon / pyunits.min, to_units=pyunits.m**3/pyunits.s))
+    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(8*pyunits.gal/pyunits.min)
+   
+   #Unfix Booster pump deltaP, but keep constant efficiency until we plug in variable performance surrogate
+    m.fs.cf_pump.control_volume.deltaP.unfix()
+
+    #Unfix HP RO pump outlet pressure, keep constant efficiency until we plug in variable performance surrogate, AND reconsider bounds on flow, pressure, power
+    m.fs.hp_pump.control_volume.eq_fix_hp_pressure.deactivate()
+
+    #Unfix deltaP just in case, but should be unfixed if calculated
+    m.fs.RO.deltaP[0].unfix()
+
+   
+
+   
+
+def build(ro_props="Seawater", ro_dimension="1d", erd_config=ERDtype.no_ERD, uvdimension=uvdimension.none, has_aop=False, has_measured_vars=True):
     """
     ro_props: choose between "NaCl" and "Seawater" prop models for RO
     ro_dimension: choose between 0d, 1d
@@ -476,7 +714,7 @@ def set_operating_conditions(m):
     # TODO: add option to eliminate underlying fixed energy calculations and shift to pump
     # mf pump
     # m.fs.mf_pump.efficiency_pump.fix(0.8)
-    m.fs.mf_pump.work_mechanical[0].fix(0.75*pyunits.hp)
+    m.fs.mf_pump.work_mechanical[0].fix(0.625*pyunits.hp)
     # mf_dP=mf_and_cf_pump_discharge_pressures-pressure
     # m.fs.mf_pump.control_volume.deltaP[0].fix(mf_dP)
     m.fs.mf_pump.control_volume.properties_out[0].pressure.fix(mf_and_cf_pump_discharge_pressures)
@@ -488,7 +726,7 @@ def set_operating_conditions(m):
     m.fs.mf.energy_electric_flow_vol_inlet.fix(0)
     
     # cf pump
-    m.fs.cf_pump.efficiency_pump.fix(0.8)
+    m.fs.cf_pump.efficiency_pump.fix(0.4)
     # m.fs.cf_pump.control_volume.properties_out[0].pressure.fix(2e5)
     m.fs.cf_pump.control_volume.deltaP[0].fix(0.0)
 
@@ -504,7 +742,7 @@ def set_operating_conditions(m):
     m.fs.mcas_to_ro_translator.outlet.temperature[0].fix(temperature)
 
     # hp pump
-    m.fs.hp_pump.efficiency_pump.fix(0.8)
+    m.fs.hp_pump.efficiency_pump.fix(0.4)
     hp_dP = hp_discharge_pressure - pressure_atm
 
     # m.fs.hp_pump.control_volume.deltaP[0].fix(hp_dP+2e5*pyunits.Pa)
@@ -523,10 +761,13 @@ def set_operating_conditions(m):
     if hasattr(m.fs.RO.feed_side, 'channel_height'):
         m.fs.RO.feed_side.channel_height.fix(34e-3*pyunits.inch)  # channel height in membrane stage [m]
     if hasattr(m.fs.RO.feed_side,'spacer_porosity'):
-        m.fs.RO.feed_side.spacer_porosity.fix(0.75)  # spacer porosity in membrane stage [-]
+        m.fs.RO.feed_side.spacer_porosity.fix(0.9)  # spacer porosity in membrane stage [-]
     # m.fs.RO.width.fix(1)  # stage width [m]
     m.fs.RO.area.fix(7.2*4)
-    m.fs.RO.deltaP.fix(-0.75e5)
+    if m.fs.RO.config.pressure_change_type != PressureChangeType.calculated:
+        m.fs.RO.deltaP.fix(-0.75e5)
+    else:
+        m.fs.RO.deltaP[0] = -0.75e5
     m.fs.RO.length.fix(4*(1.016-2*26.7e-3))
     @m.fs.RO.Constraint([0])
     def eq_fix_RO_perm_pressure(blk, t):
@@ -535,7 +776,7 @@ def set_operating_conditions(m):
     # m.fs.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
 
     # Concentrate Separator
-    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(0.1)
+    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(.2)
 
     # RO props to MCAS translator
     m.fs.ro_to_mcas_translator.outlet.pressure[0].fix(pressure_atm)
@@ -571,6 +812,7 @@ def set_operating_conditions(m):
     for (t,x,p,j) in m.fs.RO.eq_flux_mass.keys():
         iscale.constraint_scaling_transform(m.fs.RO.eq_flux_mass[t,x,p,"TDS"],1e6)
     iscale.calculate_scaling_factors(m)
+    assert_degrees_of_freedom(m,0)
 
 def initialize_system(m):
 
@@ -623,7 +865,9 @@ def initialize_with_recirculation(m):
 
         # try:
         assert_degrees_of_freedom(m, 0)
-        m.fs.RO.initialize(outlvl=idaeslog.DEBUG, solver="ipopt-watertap")
+        m.fs.RO.initialize(outlvl=idaeslog.DEBUG, 
+                        #    solver="ipopt-watertap"
+                           )
         # except:
         #     pass
         
@@ -707,7 +951,7 @@ def get_ro_model(dimension, ro_props):
         return ReverseOsmosis0D(
             property_package=ro_props,
             has_pressure_change=True,
-            pressure_change_type=PressureChangeType.fixed_per_stage,
+            pressure_change_type=PressureChangeType.calculated,
             mass_transfer_coefficient=MassTransferCoefficient.calculated,
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             module_type=ModuleType.spiral_wound,
@@ -717,7 +961,7 @@ def get_ro_model(dimension, ro_props):
         return ReverseOsmosis1D(
             property_package=ro_props,
             has_pressure_change=True,
-            pressure_change_type=PressureChangeType.fixed_per_stage,
+            pressure_change_type=PressureChangeType.calculated,
             mass_transfer_coefficient=MassTransferCoefficient.calculated,
             concentration_polarization_type=ConcentrationPolarizationType.calculated,
             module_type=ModuleType.spiral_wound,
@@ -834,6 +1078,10 @@ if __name__ == "__main__":
     uv_dim=uvdimension.none
     ERD_conf= ERDtype.no_ERD
     has_aop=False
+
+
+    build()
+    assert False
 
     if diagnostics_flag is True:
         m, results, dt = main(
