@@ -90,7 +90,7 @@ if __name__== "__main__":
         0.17709, 0.17709, 0.17709, 0.17709,
         0.12584,] 
 
-    m.append_lmp_data(lmp_data=new_test)
+    m.append_lmp_data(lmp_data=test_24hr_LMP)
  
     
 
@@ -147,8 +147,8 @@ if __name__== "__main__":
     Can also set isobaric=False for MF(UF) and CF if we want to ingest pressure drop data for them 
     '''
     m.total_energy_cost = Expression(expr=sum(m.period[:, :].fs.energy_cost))
-    m.total_water_production = Expression(expr=sum(m.period[1,t].fs.RO.mixed_permeate[0].flow_vol_phase["Liq"]*3600 for t in range(1,m.horizon_length+1)))
-    m.target_water_production = Constraint(expr=m.total_water_production>=103.0239/24)
+    m.total_water_production = Expression(expr=sum(m.period[1,t].fs.product_water.properties[0].flow_vol_phase["Liq"]*3600 for t in range(1,m.horizon_length+1)))
+    m.target_water_production = Constraint(expr=m.total_water_production>=4)
     
     m.obj = Objective(
         expr=m.total_energy_cost,
@@ -156,9 +156,12 @@ if __name__== "__main__":
     )
 
     # solver_name = "gurobi"
-    solver_name = "baron"
+    # solver_name = "baron"
     # solver_name = "scip"
     # solver_name = "cplex"
+    # solver_name = "conopt"
+    # solver_name = "minos"
+    solver_name = "ipopt"
     mip_gap = 0.1
 
     if solver_name == "gurobi":
@@ -171,7 +174,7 @@ if __name__== "__main__":
         solver = SolverFactory("scip", validate=False)
         solver.solve(m, tee=True)
 
-    elif solver_name in ["baron", "cplex"]:
+    elif solver_name in ["baron", "cplex", "conopt", "minos"]:
         solver = SolverFactory("gams")
         solver.solve(
             m,
@@ -185,4 +188,7 @@ if __name__== "__main__":
             "option reslim=600",
             ],
         )
-    
+    else:
+        ipopt = get_solver()
+        ipopt.options["max_iter"] = 500
+        res = ipopt.solve(m, tee=True)
