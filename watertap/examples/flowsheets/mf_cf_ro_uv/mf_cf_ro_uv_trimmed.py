@@ -217,9 +217,9 @@ def build_flowsheet(m,ro_props="Seawater", ro_dimension="1d", erd_config=ERDtype
 
     # Use MCAS for whole flowsheet, except RO
     m.fs.mcas_props = MCASParameterBlock(
-        solute_list=[m.fs.ro_ion, "tss"],
-        diffusivity_data={("Liq", m.fs.ro_ion): 1e-9, ("Liq", "tss"): 1e-9},
-        mw_data={m.fs.ro_ion: None, "tss": None},
+        solute_list=[m.fs.ro_ion],
+        diffusivity_data={("Liq", m.fs.ro_ion): 1e-9},
+        mw_data={m.fs.ro_ion: None},
         material_flow_basis=MaterialFlowBasis.mass,
         ignore_neutral_charge=True,
     )
@@ -297,17 +297,16 @@ def build_flowsheet(m,ro_props="Seawater", ro_dimension="1d", erd_config=ERDtype
         inlet_property_package=m.fs.ro_props, outlet_property_package=m.fs.mcas_props
     )
 
-    #TODO: this seems incorrect since translator connects to permeate and TSS shouldn't end up there
     @m.fs.ro_to_mcas_translator.Constraint(m.fs.mcas_props.component_list)
     def eq_flow_mass_comp(blk, j):
-        if j.lower() == "tss":
-            blk.properties_out[0].flow_mass_phase_comp["Liq", j].fix(0)
-            return Constraint.Skip
-        else:
-            return (
-                blk.properties_in[0].flow_mass_phase_comp["Liq", j]
-                == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
-            )
+        # if j.lower() == "tss":
+        #     blk.properties_out[0].flow_mass_phase_comp["Liq", j].fix(0)
+        #     return Constraint.Skip
+        # else:
+        return (
+            blk.properties_in[0].flow_mass_phase_comp["Liq", j]
+            == blk.properties_out[0].flow_mass_phase_comp["Liq", j]
+        )
 
     # UV
     # TODO: Add UV as an option: None, UV, UV-AOP, UVZO, UVAOPZO?

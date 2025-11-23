@@ -387,8 +387,8 @@ def build_flowsheet(m,ro_props="Seawater", ro_dimension="1d", erd_config=ERDtype
     if has_measured_vars:
         touch_measurable_vars(m)
 
-    m.fs.base_power_consumption = Param(initialize=125,units=pyunits.W, mutable=True,doc="Baseline parasitic power with pumps off")
-    m.fs.power_consumption = Expression(expr=m.fs.base_power_consumption + m.fs.mf_pump.work_mechanical[0] + m.fs.cf_pump.work_mechanical[0]+m.fs.hp_pump.work_mechanical[0])
+    m.fs.baseline_power_consumption = Param(initialize=125,units=pyunits.W, mutable=True,doc="Baseline parasitic power with pumps off")
+    m.fs.power_consumption = Expression(expr=m.fs.baseline_power_consumption + m.fs.mf_pump.work_mechanical[0] + m.fs.cf_pump.work_mechanical[0]+m.fs.hp_pump.work_mechanical[0])
     
 
     register_idaes_currency_units()
@@ -431,7 +431,21 @@ def setup_optimization_for_pricetaker(m):
     #Unfix deltaP just in case, but should be unfixed if calculated
     m.fs.RO.deltaP[0].unfix()
 
-   
+def get_var_bounds(m):
+    bounded_vars=[]
+    no_lb = []
+    no_ub = []
+    for v in m.fs.component_data_objects(Var, descend_into=True):
+        if v.lb is not None and v.ub is not None:
+            print(v.name)
+            vars.append(v)
+        elif v.lb is None and not v.is_fixed():
+            no_lb.append(v)
+        elif v.ub is None and not v.is_fixed():
+            no_ub.append(v)
+        else:
+            pass
+    return no_lb, no_ub, bounded_vars
 
    
 
@@ -673,7 +687,7 @@ def set_operating_conditions(m):
     temperature = 298 * pyunits.K
     pressure = 1e5 * pyunits.Pa
     mf_and_cf_pump_discharge_pressures= 60* pyunits.psi# 2.55e5* pyunits.Pa
-    hp_discharge_pressure = 4e5 * pyunits.Pa#12.76e5* pyunits.Pa
+    hp_discharge_pressure = 13e5 * pyunits.Pa#12.76e5* pyunits.Pa
     pressure_atm =101325* pyunits.Pa
     m.fs.feed.temperature[0].fix(temperature)
     m.fs.feed.pressure[0].fix(pressure)
@@ -728,7 +742,7 @@ def set_operating_conditions(m):
     # cf pump
     m.fs.cf_pump.efficiency_pump.fix(0.4)
     # m.fs.cf_pump.control_volume.properties_out[0].pressure.fix(2e5)
-    m.fs.cf_pump.control_volume.deltaP[0].fix(0.0)
+    m.fs.cf_pump.control_volume.deltaP[0].fix(2*pyunits.psi)
 
 
     # cartridge filtration
