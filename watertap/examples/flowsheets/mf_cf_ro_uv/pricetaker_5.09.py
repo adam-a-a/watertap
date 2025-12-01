@@ -89,11 +89,13 @@ if __name__== "__main__":
         0.17709, 0.17709, 0.17709, 0.17709,
         0.12584, 0.12584, 0.12584, 0.12584,
     ]
-    new_test= [0.12584, 0.17709,
-        0.17709, 0.17709, 0.17709, 0.17709,
-        0.12584,] 
+    new_test= [i*100 for i in test_24hr_LMP]
+    
+    temp_test = [0.12584, 0.17709,0.12584, ]
 
-    m.append_lmp_data(lmp_data=test_24hr_LMP)
+    lmp_run = temp_test
+
+    m.append_lmp_data(lmp_data=lmp_run)
  
     
 
@@ -102,23 +104,34 @@ if __name__== "__main__":
     has_touched_vars=True
     has_sub_jac=False
     get_jacobian=False
-    RO_dim="1d"
+    RO_dim="0d"
     uv_dim= "none"
     ERD_conf= "no_ERD"
     has_aop=False
 
     # build multiperiod model off of initialized flowsheet
     m.build_multiperiod_model(flowsheet_func=uci.build_flowsheet,
-                            #   flowsheet_options= {"ro_props": ro_props,
-                                                #   "ro_dimension": RO_dim,
+                              flowsheet_options= {
+                                                #   "ro_props": ro_props,
+                                                  "ro_dimension": RO_dim,
                                                 #   "erd_config": "no_ERD",
                                                 #   "uvdimension": uv_dim,
                                                 #   "has_aop": has_aop,
                                                 #   "has_measured_vars": has_touched_vars
-                                                #   }
+                                                  }
                                                   )
     
 
+    
+    m.total_energy_cost = Expression(expr=sum(m.period[:, :].fs.energy_cost))
+    m.total_water_production = Expression(expr=sum(m.period[1,t].fs.product_water.properties[0].flow_vol_phase["Liq"]*3600 for t in range(1,m.horizon_length+1)))
+    m.target_water_production = Constraint(expr=m.total_water_production>=0.61*len(lmp_run)) #25.75)
+    
+    m.obj = Objective(
+        expr=m.total_energy_cost,
+        sense="minimize",
+    )
+    
     # fixed vars
     '''
     feed mass flowrates
@@ -149,22 +162,15 @@ if __name__== "__main__":
 
     Can also set isobaric=False for MF(UF) and CF if we want to ingest pressure drop data for them 
     '''
-    m.total_energy_cost = Expression(expr=sum(m.period[:, :].fs.energy_cost))
-    m.total_water_production = Expression(expr=sum(m.period[1,t].fs.product_water.properties[0].flow_vol_phase["Liq"]*3600 for t in range(1,m.horizon_length+1)))
-    m.target_water_production = Constraint(expr=m.total_water_production>=25.75)
-    
-    m.obj = Objective(
-        expr=m.total_energy_cost,
-        sense="minimize",
-    )
+
 
     # solver_name = "gurobi"
-    solver_name = "baron"
+    # solver_name = "baron"
     # solver_name = "scip"
     # solver_name = "cplex"
     # solver_name = "conopt"
     # solver_name = "minos"
-    # solver_name = "ipopt"
+    solver_name = "ipopt"
     mip_gap = 0.1
 
     if solver_name == "gurobi":
@@ -193,7 +199,7 @@ if __name__== "__main__":
         )
     else:
         ipopt = get_solver()
-        ipopt.options["max_iter"] = 500
+        ipopt.options["max_iter"] = 5000
         res = ipopt.solve(m, tee=True)
     #%%
     # plotting stacked area of pump mechanical work and baseline power over time

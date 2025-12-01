@@ -234,7 +234,7 @@ def build_flowsheet(m,ro_props="Seawater", ro_dimension="1d", erd_config=ERDtype
     m.fs.mf_pump = Pump(property_package=m.fs.mcas_props)
 
     # Microfiltration
-    m.fs.mf = MicroFiltrationZO(property_package=m.fs.mcas_props, database=m.db)
+    m.fs.mf = MicroFiltrationZO(property_package=m.fs.mcas_props, database=m.db, isobaric=False)
 
     # Cartridge Filtration Pump
     m.fs.cf_pump = Pump(property_package=m.fs.mcas_props)
@@ -408,11 +408,16 @@ def build_flowsheet(m,ro_props="Seawater", ro_dimension="1d", erd_config=ERDtype
     assert_optimal_termination(res)
     assert_degrees_of_freedom(m,0)
     setup_optimization_for_pricetaker(m)
+    # assert_degrees_of_freedom(m,3)
+    set_var_bounds(m)
+
     return m
 
 def setup_optimization_for_pricetaker(m):
     m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].unfix()
-    
+    # m.fs.concentrate_splitter.split_fraction.setlb(0)
+    # m.fs.concentrate_splitter.split_fraction.setub(1)
+
     # Unfix feed mass flowrates and fix mass concentrations only, leaving volumetric flow free
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "H2O"].unfix()
     m.fs.feed.properties[0].conc_mass_phase_comp["Liq", "TDS"].fix()
@@ -420,16 +425,23 @@ def setup_optimization_for_pricetaker(m):
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "TDS"].unfix()
     m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "tss"].unfix()
     flow_vol =  value(pyunits.convert(8*pyunits.gallon / pyunits.min, to_units=pyunits.m**3/pyunits.s))
-    m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(8*pyunits.gal/pyunits.min)
+    
+    # TODO: uncomment if problematic; experimentally checking the unfixing of feed flow
+    # m.fs.feed.properties[0].flow_vol_phase["Liq"].fix(8*pyunits.gal/pyunits.min)
    
    #Unfix Booster pump deltaP, but keep constant efficiency until we plug in variable performance surrogate
     m.fs.cf_pump.control_volume.deltaP.unfix()
+    m.fs.cf_pump.work_mechanical.setlb(0)
 
     #Unfix HP RO pump outlet pressure, keep constant efficiency until we plug in variable performance surrogate, AND reconsider bounds on flow, pressure, power
     m.fs.hp_pump.control_volume.eq_fix_hp_pressure.deactivate()
+    m.fs.hp_pump.work_mechanical.setlb(0)
 
     #Unfix deltaP just in case, but should be unfixed if calculated
     m.fs.RO.deltaP[0].unfix()
+
+
+
 
 def get_var_bounds(m):
     bounded_vars=[]
@@ -438,7 +450,7 @@ def get_var_bounds(m):
     for v in m.fs.component_data_objects(Var, descend_into=True):
         if v.lb is not None and v.ub is not None:
             print(v.name)
-            vars.append(v)
+            bounded_vars.append(v)
         elif v.lb is None and not v.is_fixed():
             no_lb.append(v)
         elif v.ub is None and not v.is_fixed():
@@ -447,7 +459,68 @@ def get_var_bounds(m):
             pass
     return no_lb, no_ub, bounded_vars
 
-   
+def set_var_bounds(blk, feasibility_tol=1e-6, default_initial_value=0.0, logger=_log, fail_flag=False):
+
+    # Bounds on permeate, reject brine, and recirculated brine, reported by UCI
+#     [1e-3, 5.0]   # rcyc
+    blk.fs.concentrate_splitter.recirculated_concentrate_state[0].flow_vol_phase["Liq"].setlb(1e-3*pyunits.gal/pyunits.min)
+    blk.fs.concentrate_splitter.recirculated_concentrate_state[0].flow_vol_phase["Liq"].setub(5*pyunits.gal/pyunits.min)
+
+#     [1.0, 3.9],   # perm
+    blk.fs.product_water.properties[0].flow_vol_phase["Liq"].setlb(1*pyunits.gal/pyunits.min)
+    blk.fs.product_water.properties[0].flow_vol_phase["Liq"].setub(3.9*pyunits.gal/pyunits.min)
+#     [0.4, 4.9],   # conc
+    blk.fs.waste_brine.properties[0].flow_vol_phase["Liq"].setlb(0.4*pyunits.gal/pyunits.min)
+    blk.fs.waste_brine.properties[0].flow_vol_phase["Liq"].setub(4.9*pyunits.gal/pyunits.min)
+    
+    
+    # TODO: looking for a quick way to assign reasonable bounds to all vars before plugging multiperiod into global solvers
+    # from pyomo.environ import ComponentMap
+    # from pyomo.contrib.fbbt.fbbt import fbbt
+
+
+    # bound_cache = ComponentMap()
+    # for v in blk.component_data_objects(Var, active=True, descend_into=True):
+    #     bound_cache[v] = v.bounds
+
+    # try:
+    #     fbbt(
+    #         blk, feasibility_tol=feasibility_tol, deactivate_satisfied_constraints=False
+    #     )
+
+    #     for v, bounds in bound_cache.items():
+    #         if v.value is None:
+    #             logger.info(
+    #                 f"variable {v.name} has no initial value: setting to {default_initial_value}"
+    #             )
+    #             v.set_value(default_initial_value, skip_validation=True)
+    #         if v.lb is not None:
+    #             if v.lb == v.ub:
+    #                 logger.debug(f"setting {v.name} to derived value {v.value}")
+    #                 v.set_value(v.lb, skip_validation=True)
+    #                 continue
+    #             if v.value < v.lb:
+    #                 logger.debug(
+    #                     f"projecting {v.name} at value {v.value} onto derived lower bound {v.lb}"
+    #                 )
+    #                 v.set_value(v.lb, skip_validation=True)
+    #         if v.ub is not None:
+    #             if v.value > v.ub:
+    #                 logger.debug(
+    #                     f"projecting {v.name} at value {v.value} onto derived upper bound {v.ub}"
+    #                 )
+    #                 v.set_value(v.ub, skip_validation=True)
+
+    # except Exception as e:
+    #     if fail_flag:
+    #         _log.error(
+    #             f"Interval initializer failed for {blk} because of the following: {e}"
+    #         )
+    #         raise e
+    #     else:
+    #         _log.warning(
+    #             f"Interval initializer failed for {blk} because of the following: {e}"
+    #         )
 
 def build(ro_props="Seawater", ro_dimension="1d", erd_config=ERDtype.no_ERD, uvdimension=uvdimension.none, has_aop=False, has_measured_vars=True):
     """
@@ -482,7 +555,8 @@ def build(ro_props="Seawater", ro_dimension="1d", erd_config=ERDtype.no_ERD, uvd
     m.fs.mf_pump = Pump(property_package=m.fs.mcas_props)
 
     # Microfiltration
-    m.fs.mf = MicroFiltrationZO(property_package=m.fs.mcas_props, database=m.db)
+    m.fs.mf = MicroFiltrationZO(property_package=m.fs.mcas_props, database=m.db,
+                                isobaric=False)
 
     # Cartridge Filtration Pump
     m.fs.cf_pump = Pump(property_package=m.fs.mcas_props)
@@ -738,11 +812,13 @@ def set_operating_conditions(m):
     m.fs.mf.load_parameters_from_database(use_default_removal=True)
     # Negate energy accounting for MF since modeling pump separately
     m.fs.mf.energy_electric_flow_vol_inlet.fix(0)
+    # Add intrinsic pressure drop and drop to atm
+    m.fs.mf.properties_treated[0].pressure.fix(pressure_atm)
     
     # cf pump
     m.fs.cf_pump.efficiency_pump.fix(0.4)
-    # m.fs.cf_pump.control_volume.properties_out[0].pressure.fix(2e5)
-    m.fs.cf_pump.control_volume.deltaP[0].fix(2*pyunits.psi)
+    m.fs.cf_pump.control_volume.properties_out[0].pressure.fix(41.1*pyunits.psi)
+    # m.fs.cf_pump.control_volume.deltaP[0].fix(2*pyunits.psi)
 
 
     # cartridge filtration
@@ -781,7 +857,7 @@ def set_operating_conditions(m):
     if m.fs.RO.config.pressure_change_type != PressureChangeType.calculated:
         m.fs.RO.deltaP.fix(-0.75e5)
     else:
-        m.fs.RO.deltaP[0] = -0.75e5
+        m.fs.RO.deltaP[0].set_value(-0.75e5)
     m.fs.RO.length.fix(4*(1.016-2*26.7e-3))
     @m.fs.RO.Constraint([0])
     def eq_fix_RO_perm_pressure(blk, t):
@@ -913,7 +989,7 @@ def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
 
 def setup_optimization(m):
     # Concentrate Separator
-    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(1e-8)
+    m.fs.concentrate_splitter.split_fraction[0, "recirculated_concentrate"].fix(1e-3)
     
     master_initialize_with_recirculation(m, 3)
     # res=solve(m,tee=True)
