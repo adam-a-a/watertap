@@ -808,9 +808,8 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "energy_density_phase": {
                     "doc": "Energy Density",
                     "units": pyunits.J * pyunits.m**-3,
-                    "method": "_energy_density_phase"
+                    "method": "_energy_density_phase",
                 },
-
             }
         )
         obj.add_default_units(
