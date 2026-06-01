@@ -11,7 +11,6 @@
 #################################################################################
 
 import pytest
-import pandas as pd
 from idaes.core.base.property_base import (
     PhysicalParameterBlock as DummyPhysicalParameterBlock,
 )
