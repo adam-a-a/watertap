@@ -18,13 +18,17 @@ from idaes.core.base.property_base import (
 from watertap.core.util.property_helpers import get_property_metadata
 
 
-# Dummy classes to mimic WaterTAP metadata structure
+# Dummy classes to mimic metadata structure
 class DummyProp:
     def __init__(self, name, units, doc):
-        self._name = name
-        self._units = units
+        self.name = name
+        self.units = units
         self._doc = doc
-
+        self._indices = [None]
+        self.supported = True
+        
+    def __getitem__(self, idx):
+        return self     
 
 class DummyMetadata:
     def __init__(self):
@@ -44,17 +48,17 @@ class DummyPropPkg(DummyPhysicalParameterBlock):
 
 @pytest.mark.unit
 def test_get_property_metadata():
-    pkg = DummyPropPkg()
-    df = get_property_metadata(pkg)
+    pkg = DummyPropPkg.__new__(DummyPropPkg)
+    props = get_property_metadata(pkg)
 
     # Check type
-    assert isinstance(df, pd.DataFrame)
+    assert isinstance(props, list)
 
     # Check columns
-    expected_cols = ["Description", "Name", "Units"]
-    assert list(df.columns) == expected_cols
+    expected_keys = ["Description", "Name", "Units"]
+    assert all(key in props[0] for key in expected_keys)
 
     # Check content
-    assert "flow_mass" in df["Name"].values
-    assert "temperature" in df["Name"].values
-    assert "kg/s" in df["Units"].values
+    assert "flow_mass" in [p["Name"] for p in props]
+    assert "temperature" in [p["Name"] for p in props]
+    assert "kg/s" in [p["Units"] for p in props]
