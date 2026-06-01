@@ -12,9 +12,6 @@
 import pytest
 from pyomo.environ import ConcreteModel
 from idaes.core import FlowsheetBlock
-import re
-import pandas as pd
-from pandas.testing import assert_frame_equal
 import watertap.property_models.seawater_prop_pack as props
 from idaes.models.properties.tests.test_harness import (
     PropertyTestHarness as PropertyTestHarness_idaes,
