@@ -378,6 +378,11 @@ class PropertyTestHarness:
                         v_name=v_name, ind=ind, val=val, val_t=value(var)
                     )
                 )
+    @pytest.mark.unit
+    def test_list_and_print_properties(self, frame_stateblock):
+        m = frame_stateblock
+        m.fs.properties.list_properties()
+        m.fs.properties.print_properties()
 
     @pytest.fixture(scope="class")
     def frame_control_volume(self):

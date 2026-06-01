@@ -62,6 +62,10 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -173,6 +177,19 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq", "NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-4, index="Liq")
+    
+    def list_properties(self):
+        """
+        Return list of property descriptions, names, and units.
+        """
+        prop_list = get_property_metadata(self)
+        return prop_list
+
+    def print_properties(self):
+        """
+        Print table of property descriptions, names, and units to the console.
+        """
+        print_property_metadata(self)
 
     @classmethod
     def define_metadata(cls, obj):
@@ -199,8 +216,16 @@ class NaClParameterData(PhysicalParameterBlock):
 
         obj.define_custom_properties(
             {
-                "osm_coeff": {"method": "_osm_coeff"},
-                "enth_flow": {"method": "_enth_flow"},
+                "osm_coeff": {
+                    "doc": "Osmotic Coefficient",
+                    "units": pyunits.dimensionless,
+                    "method": "_osm_coeff"
+                },
+                "enth_flow": {
+                    "doc": "Enthalpy Flow",
+                    "units": pyunits.J / pyunits.s,
+                    "method": "_enth_flow"
+                },
             }
         )
 
