@@ -12,6 +12,7 @@
 """
 Initial property package for seawater system
 """
+
 # Import Pyomo libraries
 from pyomo.environ import (
     Constraint,
@@ -63,7 +64,10 @@ import idaes.core.util.scaling as iscale
 # Import WaterTAP libraries
 from watertap.core.solvers import get_solver
 from watertap.core.util.scaling import transform_property_constraints
-from watertap.core.util.property_helpers import get_property_metadata, print_property_metadata
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -774,36 +778,35 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
                 "therm_cond_phase": {"method": "_therm_cond_phase"},
                 "diffus_phase_comp": {"method": "_diffus_phase_comp"},
-              
             }
         )
         obj.define_custom_properties(
             {
-        "dens_mass_solvent": {
-            "doc": "Mass Density of Pure Water",
-            "units": pyunits.kg * pyunits.m**-3,
-            "method": "_dens_mass_solvent",
-        },
-        "osm_coeff": {
-            "doc": "Osmotic Coefficient",
-            "units": pyunits.dimensionless,
-            "method": "_osm_coeff",
-        },
-        "enth_flow": {
-            "doc": "Enthalpy Flow",
-            "units": pyunits.J * pyunits.s**-1,
-            "method": "_enth_flow",
-        },
-        "dh_vap_mass": {
-            "doc": "Latent Heat of Vaporization",
-            "units": pyunits.J * pyunits.kg**-1,
-            "method": "_dh_vap_mass",
-        },
-        "boiling_point_elevation_phase": {
-            "doc": "Boiling Point Elevation",
-            "units": pyunits.K,
-            "method": "_boiling_point_elevation",
-            }
+                "dens_mass_solvent": {
+                    "doc": "Mass Density of Pure Water",
+                    "units": pyunits.kg * pyunits.m**-3,
+                    "method": "_dens_mass_solvent",
+                },
+                "osm_coeff": {
+                    "doc": "Osmotic Coefficient",
+                    "units": pyunits.dimensionless,
+                    "method": "_osm_coeff",
+                },
+                "enth_flow": {
+                    "doc": "Enthalpy Flow",
+                    "units": pyunits.J * pyunits.s**-1,
+                    "method": "_enth_flow",
+                },
+                "dh_vap_mass": {
+                    "doc": "Latent Heat of Vaporization",
+                    "units": pyunits.J * pyunits.kg**-1,
+                    "method": "_dh_vap_mass",
+                },
+                "boiling_point_elevation_phase": {
+                    "doc": "Boiling Point Elevation",
+                    "units": pyunits.K,
+                    "method": "_boiling_point_elevation",
+                },
             }
         )
         obj.add_default_units(

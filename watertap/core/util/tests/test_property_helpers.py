@@ -26,9 +26,10 @@ class DummyProp:
         self._doc = doc
         self._indices = [None]
         self.supported = True
-        
+
     def __getitem__(self, idx):
-        return self     
+        return self
+
 
 class DummyMetadata:
     def __init__(self):

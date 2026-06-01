@@ -12,6 +12,7 @@
 
 __author__ = "Adam Atia"
 
+
 def get_property_metadata(prop_pkg):
     """Return metadata for every property a package marks as supported.
 
@@ -23,12 +24,12 @@ def get_property_metadata(prop_pkg):
     """
     pset = prop_pkg.get_metadata().properties
     rows = []
-    for prop in pset:                       
-        #TODO: switch prop._doc to prop.doc once doc property added in IDAES
+    for prop in pset:
+        # TODO: switch prop._doc to prop.doc once doc property added in IDAES
         doc = getattr(prop, "doc", None) or prop._doc
         # indices can include None, phase_comp, etc.
-        for idx in prop._indices:           
-            sub = prop[idx]                 
+        for idx in prop._indices:
+            sub = prop[idx]
             if sub.supported:
                 rows.append(
                     {"Description": doc, "Name": sub.name, "Units": str(sub.units)}
@@ -36,6 +37,7 @@ def get_property_metadata(prop_pkg):
         sorted_rows = sorted(rows, key=lambda r: r["Description"].lower())
 
     return sorted_rows
+
 
 def print_property_metadata(prop_pkg):
     """Pretty-print supported properties as a fixed-width table."""
