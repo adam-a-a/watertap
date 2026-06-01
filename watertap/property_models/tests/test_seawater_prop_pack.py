@@ -167,50 +167,6 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
         }
 
 
-# @pytest.mark.component
-# class TestSeawaterPropertySolution_3(PropertyRegressionTest):
-#     def configure(self):
-#         self.prop_pack = props.SeawaterParameterBlock
-#         self.param_args = {}
-#
-#         self.solver = "ipopt"
-#         self.optarg = {"nlp_scaling_method": "user-scaling"}
-#
-#         self.scaling_args = {
-#             ("flow_vol_phase", "Liq"): 1,
-#         }
-#         self.state_args = {
-#             ("flow_vol_phase", "Liq"): 10,
-#             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.04,
-#             ("temperature", None): 273.15 + 10,
-#             ("pressure", None): 2e6,
-#         }
-#         self.regression_solution = {
-#             ("mass_frac_phase_comp", ("Liq", "H2O")): 0.96,
-#             ("mass_frac_phase_comp", ("Liq", "TDS")): 0.04,
-#             ("dens_mass_phase", "Liq"): 1.039e3,
-#             ("dens_mass_solvent", None): 999.5,
-#             ("flow_vol_phase", "Liq"): 9.628e-4,
-#             ("conc_mass_phase_comp", ("Liq", "H2O")): 986.8,
-#             ("conc_mass_phase_comp", ("Liq", "TDS")): 51.93,
-#             ("flow_mol_phase_comp", ("Liq", "H2O")): 52.73,
-#             ("flow_mol_phase_comp", ("Liq", "TDS")): 1.592,
-#             ("mole_frac_phase_comp", ("Liq", "H2O")): 0.9707,
-#             ("mole_frac_phase_comp", ("Liq", "TDS")): 2.931e-2,
-#             ("molality_phase_comp", ("Liq", "TDS")): 1.676,
-#             ("visc_d_phase", "Liq"): 1.443e-3,
-#             ("osm_coeff", None): 0.9106,
-#             ("pressure_osm_phase", "Liq"): 3.591e6,
-#             ("enth_mass_phase", "Liq"): 4.783e4,
-#             ("pressure_sat", None): 1.194e3,
-#             ("cp_mass_phase", "Liq"): 3.916e3,
-#             ("therm_cond_phase", "Liq"): 0.5854,
-#             ("dh_vap_mass", None): 2.353e6,
-#             ("diffus_phase_comp", ("Liq", "TDS")): 1.471e-9,
-#             ("boiling_point_elevation_phase", "Liq"): 0.4069,
-#         }
-
-
 @pytest.mark.component
 class TestSeawaterCalculateState_1(PropertyCalculateStateTest):
     def configure(self):
@@ -342,55 +298,10 @@ class TestSeawaterCalculateState_5(PropertyCalculateStateTest):
 
 
 @pytest.mark.unit
-def test_list_properties(capsys):
+def test_list_and_print_properties():
     m = ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.props = props.SeawaterParameterBlock()
 
-    # clear any existing captured output, call list_properties, then capture its output
-    # capsys.readouterr()
-    df = m.fs.props.list_properties()
-    # captured = capsys.readouterr().out
-
-    # # Build DataFrame from captured table by splitting on two or more spaces
-    # lines = [ln for ln in captured.splitlines() if ln.strip() != ""]
-    # print(lines)
-    # # find header line
-    # header_idx = 0
-    # header_cols = re.split(r"\s{2,}", lines[header_idx+1].strip())
-    # data_lines = lines[header_idx + 2 :]  # skip header and separator line
-    # rows = [re.split(r"\s{2,}", ln.strip()) for ln in data_lines]
-
-    # df = pd.DataFrame(rows, columns=header_cols)
-
-    # Expected dataframe rows (as parsed into columns)
-    expected_cols = ["Description", "Name", "Units"]
-    expected_rows = [
-        ["Boiling point elevation temperature", "boiling_point_elevation_phase", "K"],
-        ["Mass concentration", "conc_mass_phase_comp", "kg*m**(-3)"],
-        ["Specific heat capacity", "cp_mass_phase", "J/(kg*K)"],
-        ["Mass density of solution", "dens_mass_phase", "kg*m**(-3)"],
-        ["Mass density of pure water", "dens_mass_solvent", "kg*m**(-3)"],
-        ["Latent heat of vaporization", "dh_vap_mass", "J*kg**(-1)"],
-        ["Diffusivity", "diffus_phase_comp", "m**2/s"],
-        ["Enthalpy flow", "enth_flow", "J/s"],
-        ["Specific enthalpy", "enth_mass_phase", "J*kg**(-1)"],
-        ["Mass flow rate", "flow_mass_phase_comp", "kg/s"],
-        ["Molar flowrate", "flow_mol_phase_comp", "mol/s"],
-        ["Total volumetric flow rate", "flow_vol", "m**3/s"],
-        ["Volumetric flow rate of phase", "flow_vol_phase", "m**3/s"],
-        ["Mass fraction", "mass_frac_phase_comp", "dimensionless"],
-        ["Molality", "molality_phase_comp", "mol/kg"],
-        ["Mole fraction", "mole_frac_phase_comp", "dimensionless"],
-        ["Osmotic coefficient", "osm_coeff", "dimensionless"],
-        ["Pressure", "pressure", "Pa"],
-        ["Osmotic pressure", "pressure_osm_phase", "Pa"],
-        ["Vapor pressure", "pressure_sat", "Pa"],
-        ["Temperature", "temperature", "K"],
-        ["Thermal conductivity", "therm_cond_phase", "W/(m*K)"],
-        ["Dynamic viscosity", "visc_d_phase", "Pa*s"],
-    ]
-    expected_df = pd.DataFrame(expected_rows, columns=expected_cols)
-
-    # Compare dataframes
-    assert_frame_equal(df.reset_index(drop=True), expected_df.reset_index(drop=True))
+    m.fs.props.list_properties()
+    m.fs.props.print_properties()

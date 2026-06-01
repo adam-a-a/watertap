@@ -745,7 +745,7 @@ class SeawaterParameterData(PhysicalParameterBlock):
         """
         Return list of property descriptions, names, and units.
         """
-        prop_list = get_property_metadata(m.fs.props)
+        prop_list = get_property_metadata(self)
         return prop_list
 
     def print_properties(self):
@@ -772,7 +772,6 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "molality_phase_comp": {"method": "_molality_phase_comp"},
                 "visc_d_phase": {"method": "_visc_d_phase"},
                 "pressure_osm_phase": {"method": "_pressure_osm_phase"},
-                "energy_density_phase": {"method": "_energy_density_phase"},
                 "enth_mass_phase": {"method": "_enth_mass_phase"},
                 "pressure_sat": {"method": "_pressure_sat"},
                 "cp_mass_phase": {"method": "_cp_mass_phase"},
@@ -805,8 +804,14 @@ class SeawaterParameterData(PhysicalParameterBlock):
                 "boiling_point_elevation_phase": {
                     "doc": "Boiling Point Elevation",
                     "units": pyunits.K,
-                    "method": "_boiling_point_elevation",
+                    "method": "_boiling_point_elevation_phase",
                 },
+                "energy_density_phase": {
+                    "doc": "Energy Density",
+                    "units": pyunits.J * pyunits.m**-3,
+                    "method": "_energy_density_phase"
+                },
+
             }
         )
         obj.add_default_units(
