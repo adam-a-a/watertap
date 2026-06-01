@@ -177,7 +177,7 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("diffus_phase_comp", 1e9, index=("Liq", "NaCl"))
         self.set_default_scaling("osm_coeff", 1e0)
         self.set_default_scaling("enth_mass_phase", 1e-4, index="Liq")
-    
+
     def list_properties(self):
         """
         Return list of property descriptions, names, and units.
@@ -219,12 +219,12 @@ class NaClParameterData(PhysicalParameterBlock):
                 "osm_coeff": {
                     "doc": "Osmotic Coefficient",
                     "units": pyunits.dimensionless,
-                    "method": "_osm_coeff"
+                    "method": "_osm_coeff",
                 },
                 "enth_flow": {
                     "doc": "Enthalpy Flow",
                     "units": pyunits.J / pyunits.s,
-                    "method": "_enth_flow"
+                    "method": "_enth_flow",
                 },
             }
         )

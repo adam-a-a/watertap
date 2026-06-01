@@ -84,7 +84,10 @@ from watertap.core.util.chemistry import (
     get_charge,
     get_molar_mass_quantity,
 )
-from watertap.core.util.property_helpers import get_property_metadata, print_property_metadata
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 __author__ = "Adam Atia, Xiangyu Bi, Hunter Barber, Kurban Sitterley"
 # Set up logger
@@ -877,7 +880,7 @@ class MCASParameterData(PhysicalParameterBlock):
         self.set_default_scaling("visc_k_phase", 1e6, index="Liq")
         self.set_default_scaling("enth_mass_phase", 1e-5, index="Liq")
         self.set_default_scaling("pressure_sat", 1e-5)
-    
+
     def list_properties(self):
         """
         Return list of property descriptions, names, and units.
@@ -925,67 +928,83 @@ class MCASParameterData(PhysicalParameterBlock):
                 "flow_equiv_phase_comp": {
                     "doc": "Component Equivalent Charge Flowrate",
                     "units": "mol/s",
-                    "method": "_flow_equiv_phase_comp"},
+                    "method": "_flow_equiv_phase_comp",
+                },
                 "charge_comp": {
                     "doc": "Component Charge",
                     "units": "dimensionless",
-                    "method": "_charge_comp"},
+                    "method": "_charge_comp",
+                },
                 "conc_equiv_phase_comp": {
                     "doc": "Equivalent Charge Concentration",
                     "units": "mol/m**3",
-                    "method": "_conc_equiv_phase_comp"},
+                    "method": "_conc_equiv_phase_comp",
+                },
                 "equiv_conductivity_phase": {
                     "doc": "Equivalent Electrical Conductivity of Liquid Phase",
                     "units": "meter**2 * ohm**-1 * mol**-1",
-                    "method": "_equiv_conductivity_phase"},
+                    "method": "_equiv_conductivity_phase",
+                },
                 "elec_cond_phase": {
                     "doc": "Electrical Conductivity",
                     "units": "meter**-1 * ohm**-1",
-                    "method": "_elec_cond_phase"},
+                    "method": "_elec_cond_phase",
+                },
                 "dens_mass_solvent": {
                     "doc": "Density of Solvent",
                     "units": "kg * meter**-3",
-                    "method": "_dens_mass_solvent"},
+                    "method": "_dens_mass_solvent",
+                },
                 "dielectric_constant": {
                     "doc": "Dielectric Constant of Water",
                     "units": "dimensionless",
-                    "method": "_dielectric_constant"},
+                    "method": "_dielectric_constant",
+                },
                 "debye_huckel_constant": {
                     "doc": "Debye-Huckel Constant, A, for Activity Coefficient Calculation",
                     "units": "(kg / mol) ** 0.5",
-                    "method": "_debye_huckel_constant"},
+                    "method": "_debye_huckel_constant",
+                },
                 "enth_flow": {
                     "doc": "Enthalpy Flow",
                     "units": "J / s",
-                    "method": "_enth_flow"},
+                    "method": "_enth_flow",
+                },
                 "ionic_strength_molal": {
                     "doc": "Ionic Strength on Molal Basis",
                     "units": "mol / kg",
-                    "method": "_ionic_strength_molal"},
+                    "method": "_ionic_strength_molal",
+                },
                 "molar_volume_phase_comp": {
                     "doc": "Molar Volume of Solutes",
                     "units": "m**3 / mol",
-                    "method": "_molar_volume_phase_comp"},
+                    "method": "_molar_volume_phase_comp",
+                },
                 "radius_stokes_comp": {
                     "doc": "Stokes Radius of Solute",
                     "units": "m",
-                    "method": "_radius_stokes_comp"},
+                    "method": "_radius_stokes_comp",
+                },
                 "elec_mobility_phase_comp": {
                     "doc": "Electrical Mobility of Ions",
                     "units": "m**2 / (V * s)",
-                    "method": "_elec_mobility_phase_comp"},
+                    "method": "_elec_mobility_phase_comp",
+                },
                 "trans_num_phase_comp": {
                     "doc": "Ion Transport Number in Liquid Phase",
                     "units": "dimensionless",
-                    "method": "_trans_num_phase_comp"},
+                    "method": "_trans_num_phase_comp",
+                },
                 "total_hardness": {
                     "doc": "Total Hardness as Calcium Carbonate",
                     "units": "mg / L",
-                    "method": "_total_hardness"},
+                    "method": "_total_hardness",
+                },
                 "total_dissolved_solids": {
                     "doc": "Total Dissolved Solids",
                     "units": "mg / L",
-                    "method": "_total_dissolved_solids"},
+                    "method": "_total_dissolved_solids",
+                },
             }
         )
 

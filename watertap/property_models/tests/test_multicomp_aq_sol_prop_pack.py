@@ -3189,6 +3189,7 @@ class TestMCASScaler:
             m.fs.stream[0].eq_total_hardness
         ] == pytest.approx(0.0001443, rel=1e-3)
 
+
 @pytest.mark.unit
 def test_list_and_print_properties():
     m = ConcreteModel()
