@@ -383,7 +383,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.costing.energy_recovery_device.pressure_exchanger_cost,
+        obj=fs.costing.energy_recovery_device.unit_cost,
         name="ERD pressure exchanger cost",
         ui_units=pyunits.USD_2018 / (pyunits.meter**3 / pyunits.hours),
         display_units="$/m3/hr",
@@ -599,9 +599,8 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=True,
         output_category="System metrics",
     )
-    total_area = sum(fs.ROUnits[i].area for i in fs.NonFinalStages)
     exports.add(
-        obj=total_area,
+        obj=fs.total_membrane_area,
         name="Total membrane area",
         ui_units=pyunits.m**2,
         display_units="m^2",
