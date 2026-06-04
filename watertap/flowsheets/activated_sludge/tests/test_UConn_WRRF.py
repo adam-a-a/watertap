@@ -45,10 +45,6 @@ class TestUConnFlowsheetASM3:
 
         scale_flowsheet(m)
 
-        # res = solve_flowsheet(m)
-
-        # m.results = res
-
         return m
 
     @pytest.mark.integration
@@ -63,9 +59,6 @@ class TestUConnFlowsheetASM3:
 
     @pytest.mark.integration
     def test_results(self, model):
-        comps = model.fs.props.solute_set
-        model.fs.Treated.display()
-
         # Treated water
         assert value(model.fs.Treated.flow_vol[0]) == pytest.approx(
             1.06747685185185, rel=1e-4
