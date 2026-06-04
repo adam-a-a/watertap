@@ -16,7 +16,7 @@ Layout:
     * 5 reactors
         * R1, R3, R5: anoxic
         * R2 and R4: aerobic
-    * 2 Mixers: 
+    * 2 Mixers:
         * M1 mixes feed and R5 split fraction, outlet to R1 inlet
         * M2 mixes R1 outlet, R2 outlet, outlet to R3 inlet
     * 1 Splitter:
@@ -375,23 +375,24 @@ if __name__ == "__main__":
     m = build_flowsheet(asm_model=ASMModel.asm3)
     set_operating_conditions(m, asm_model=ASMModel.asm3)
 
-    ini1 = {"S_O": 0.0333140769653528, 
-            "S_I": 29.9999999999999, 
-            "S_S": 1.79253833233150, 
-            "S_NH4": 7.47840572528914, 
-            "S_N2": 25.0222401125193, 
-            "S_NOX": 4.49343937121928, 
-            "alkalinity": 4.95892616814772, 
-            "X_I": 1460.88032984731, 
-            "X_S": 239.049918909639, 
-            "X_H": 1624.51533042293, 
-            "X_STO": 316.937373308996, 
-            "X_A": 130.798830163795, 
-            "X_TSS": 3044.89285508125, 
-            "flow_vol": 92230, 
-            "temperature": 15.0000000000000} 
-    
-    
+    ini1 = {
+        "S_O": 0.0333140769653528,
+        "S_I": 29.9999999999999,
+        "S_S": 1.79253833233150,
+        "S_NH4": 7.47840572528914,
+        "S_N2": 25.0222401125193,
+        "S_NOX": 4.49343937121928,
+        "alkalinity": 4.95892616814772,
+        "X_I": 1460.88032984731,
+        "X_S": 239.049918909639,
+        "X_H": 1624.51533042293,
+        "X_STO": 316.937373308996,
+        "X_A": 130.798830163795,
+        "X_TSS": 3044.89285508125,
+        "flow_vol": 92230,
+        "temperature": 15.0000000000000,
+    }
+
     ini2 = {
         "S_O": 2.00000074088136,
         "S_I": 30,
@@ -410,22 +411,23 @@ if __name__ == "__main__":
         "temperature": 14.8581001531874,
     }
 
-    ini_mod = {"S_O": 0.0333140769653528, 
-            "S_I": 29.9999999999999, 
-            "S_S": 1.79253833233150, 
-            "S_NH4": 7.47840572528914, 
-            "S_N2": 25.0222401125193, 
-            "S_NOX": 4.49343937121928, 
-            "alkalinity": 4.95892616814772, 
-            "X_I": 1460.88032984731, 
-            "X_S": 239.049918909639, 
-            "X_H": 1624.51533042293, 
-            "X_STO": 316.937373308996, 
-            "X_A": 130.798830163795, 
-            "X_TSS": 3044.89285508125, 
-            "flow_vol": 36892, 
-            "temperature": 15.0000000000000} 
-    
+    ini_mod = {
+        "S_O": 0.0333140769653528,
+        "S_I": 29.9999999999999,
+        "S_S": 1.79253833233150,
+        "S_NH4": 7.47840572528914,
+        "S_N2": 25.0222401125193,
+        "S_NOX": 4.49343937121928,
+        "alkalinity": 4.95892616814772,
+        "X_I": 1460.88032984731,
+        "X_S": 239.049918909639,
+        "X_H": 1624.51533042293,
+        "X_STO": 316.937373308996,
+        "X_A": 130.798830163795,
+        "X_TSS": 3044.89285508125,
+        "flow_vol": 36892,
+        "temperature": 15.0000000000000,
+    }
 
     solution_mod = {
         "S_O": 6.07975,
@@ -475,16 +477,11 @@ if __name__ == "__main__":
         "X_TSS": 196.770399,
         "alkalinity": 4.97368,
         # 230575.0,
-
-        
     }
 
     initvec = ini1
 
     solution = solution_ini1
-
-
-
 
     reset_asm3_inlet_conditions(m, initvec)
     scale_flowsheet(m)
@@ -514,8 +511,6 @@ if __name__ == "__main__":
     print(stream_table_dataframe_to_string(stream_table))
     m.fs.R2._get_performance_contents()
     m.fs.R4._get_performance_contents()
-
-
 
     my_solution = {
         k: pyo.value(m.fs.Treated.conc_mass_comp[0, k]) * 1e3
