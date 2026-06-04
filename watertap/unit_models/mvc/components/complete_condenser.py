@@ -1,7 +1,7 @@
 #################################################################################
-# WaterTAP Copyright (c) 2020-2024, The Regents of the University of California,
+# WaterTAP Copyright (c) 2020-2026, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory, Oak Ridge National Laboratory,
-# National Renewable Energy Laboratory, and National Energy Technology
+# National Laboratory of the Rockies, and National Energy Technology
 # Laboratory (subject to receipt of any required approvals from the U.S. Dept.
 # of Energy). All rights reserved.
 #
@@ -287,6 +287,7 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
         return {"vars": var_dict}
 
     def calculate_scaling_factors(self):
+        t = self.flowsheet().time
         super().calculate_scaling_factors()
 
         for (t, j), c in self.control_volume.mass_balance.items():
@@ -294,3 +295,5 @@ class CompressorData(InitializationMixin, UnitModelBlockData):
                 self.control_volume.properties_in[t].flow_mass_phase_comp["Vap", j]
             )
             iscale.constraint_scaling_transform(c, sf)
+        sf = iscale.get_scaling_factor(self.control_volume.properties_out[t].pressure)
+        iscale.constraint_scaling_transform(self.eq_condenser_pressure_sat[t], sf)
