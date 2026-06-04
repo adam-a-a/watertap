@@ -62,6 +62,10 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 
 from watertap.core.util.scaling import transform_property_constraints
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -684,6 +688,19 @@ class NaClParameterData(PhysicalParameterBlock):
         self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
         self.set_default_scaling("solubility_comp", 1e0)
+
+    def list_properties(self):
+        """
+        Return list of property descriptions, names, and units.
+        """
+        prop_list = get_property_metadata(self)
+        return prop_list
+
+    def print_properties(self):
+        """
+        Print table of property descriptions, names, and units to the console.
+        """
+        print_property_metadata(self)
 
     @classmethod
     def define_metadata(cls, obj):

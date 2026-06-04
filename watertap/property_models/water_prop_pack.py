@@ -63,6 +63,10 @@ from idaes.core.util.exceptions import (
 import idaes.core.util.scaling as iscale
 from watertap.core.util.scaling import transform_property_constraints
 from watertap.custom_exceptions import FrozenPipes
+from watertap.core.util.property_helpers import (
+    get_property_metadata,
+    print_property_metadata,
+)
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
@@ -507,6 +511,19 @@ class WaterParameterData(PhysicalParameterBlock):
         self.set_default_scaling("therm_cond_phase", 1e0, index="Liq")
         self.set_default_scaling("specific_vol_sat_phase", 1, index="Vap")
         self.set_default_scaling("specific_vol_phase", 1, index="Vap")
+
+    def list_properties(self):
+        """
+        Return list of property descriptions, names, and units.
+        """
+        prop_list = get_property_metadata(self)
+        return prop_list
+
+    def print_properties(self):
+        """
+        Print table of property descriptions, names, and units to the console.
+        """
+        print_property_metadata(self)
 
     @classmethod
     def define_metadata(cls, obj):
