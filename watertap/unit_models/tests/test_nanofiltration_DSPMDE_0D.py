@@ -346,7 +346,9 @@ class TestNanoFiltration_with_CP_5ions:
 
         for ion in ions:
             m.fs.properties.set_default_scaling(
-                "flow_mol_phase_comp", 1e4, index=("Liq", ion),
+                "flow_mol_phase_comp",
+                1e4,
+                index=("Liq", ion),
             )
 
         # m.fs.properties.set_default_scaling(
