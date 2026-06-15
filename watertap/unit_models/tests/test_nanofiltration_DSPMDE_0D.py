@@ -614,7 +614,7 @@ class TestNanoFiltration_without_CP_5ions:
             "flow_mol_phase_comp", 1e3, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e4, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
@@ -641,7 +641,7 @@ class TestNanoFiltration_without_CP_5ions:
         initialization_tester(m)
 
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(m.fs.unit, small=1e-6, zero=1e-12)
+            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
         )
         for var, val in badly_scaled_var_lst:
             print(var.name, val)
