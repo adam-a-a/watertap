@@ -342,33 +342,33 @@ class TestNanoFiltration_with_CP_5ions:
     def test_calculate_scaling(self, NF_frame):
         m = NF_frame
 
-        ions = ["Ca_2+", "SO4_2-", "Mg_2+", "Na_+", "Cl_-"]
+        # ions = ["Ca_2+", "SO4_2-", "Mg_2+", "Na_+", "Cl_-"]
 
-        for ion in ions:
-            m.fs.properties.set_default_scaling(
-                "flow_mol_phase_comp",
-                1e3,
-                index=("Liq", ion),
-            )
+        # for ion in ions:
+        #     m.fs.properties.set_default_scaling(
+        #         "flow_mol_phase_comp",
+        #         1e3,
+        #         index=("Liq", ion),
+        #     )
 
-        # m.fs.properties.set_default_scaling(
-        #     "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
-        # )
-        # m.fs.properties.set_default_scaling(
-        #     "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
-        # )
-        # m.fs.properties.set_default_scaling(
-        #     "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
-        # )
-        # m.fs.properties.set_default_scaling(
-        #     "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
-        # )
-        # m.fs.properties.set_default_scaling(
-        #     "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
-        # )
-        # m.fs.properties.set_default_scaling(
-        #     "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
-        # )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
+        )
+        m.fs.properties.set_default_scaling(
+            "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
+        )
 
         calculate_scaling_factors(m)
 
@@ -611,19 +611,19 @@ class TestNanoFiltration_without_CP_5ions:
         m = NF_frame
 
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Ca_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e4, index=("Liq", "SO4_2-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "SO4_2-")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e3, index=("Liq", "Mg_2+")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Cl_-")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Cl_-")
         )
         m.fs.properties.set_default_scaling(
-            "flow_mol_phase_comp", 1e2, index=("Liq", "Na_+")
+            "flow_mol_phase_comp", 1e3, index=("Liq", "Na_+")
         )
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e0, index=("Liq", "H2O")
@@ -641,7 +641,7 @@ class TestNanoFiltration_without_CP_5ions:
         initialization_tester(m)
 
         badly_scaled_var_lst = list(
-            badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
+            badly_scaled_var_generator(m.fs.unit, small=1e-6, zero=1e-12)
         )
         for var, val in badly_scaled_var_lst:
             print(var.name, val)
