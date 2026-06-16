@@ -42,7 +42,8 @@ solver = get_solver()
 
 class TestMBRZOdefault:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -234,7 +235,8 @@ class TestMBRZOdefault:
 
 class TestMBRZO_w_default_removal:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
         m.db = Database()
 
@@ -444,7 +446,8 @@ params = db._get_technology("mbr")
 
 class TestMBRZOsubtype:
     @pytest.fixture(scope="class")
-    def model(self):
+    @classmethod
+    def model(cls):
         m = ConcreteModel()
 
         m.fs = FlowsheetBlock(dynamic=False)
