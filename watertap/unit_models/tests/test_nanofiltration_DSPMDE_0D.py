@@ -31,7 +31,6 @@ from idaes.core import (
     MomentumBalanceType,
     ControlVolume0DBlock,
 )
-from idaes.core.util.model_statistics import variables_set
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     ActivityCoefficientModel,
