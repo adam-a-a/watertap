@@ -31,6 +31,7 @@ from idaes.core import (
     MomentumBalanceType,
     ControlVolume0DBlock,
 )
+from idaes.core.util.model_statistics import variables_set
 from watertap.property_models.multicomp_aq_sol_prop_pack import (
     MCASParameterBlock,
     ActivityCoefficientModel,
@@ -326,9 +327,6 @@ class TestNanoFiltration_with_CP_5ions:
         assert isinstance(m.fs.unit.pore_exit, MCASStateBlock)
 
         # test statistics
-        from idaes.core.util.model_statistics import variables_set
-
-        [print(i) for i in variables_set(m)]
         assert number_variables(m) == 574
         assert number_total_constraints(m) == 534
         assert number_unused_variables(m) == 11
@@ -341,15 +339,6 @@ class TestNanoFiltration_with_CP_5ions:
     @pytest.mark.unit
     def test_calculate_scaling(self, NF_frame):
         m = NF_frame
-
-        # ions = ["Ca_2+", "SO4_2-", "Mg_2+", "Na_+", "Cl_-"]
-
-        # for ion in ions:
-        #     m.fs.properties.set_default_scaling(
-        #         "flow_mol_phase_comp",
-        #         1e3,
-        #         index=("Liq", ion),
-        #     )
 
         m.fs.properties.set_default_scaling(
             "flow_mol_phase_comp", 1e4, index=("Liq", "Ca_2+")
@@ -384,8 +373,7 @@ class TestNanoFiltration_with_CP_5ions:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
         )
-        for var, val in badly_scaled_var_lst:
-            print(var.name, val)
+
         assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.component
@@ -643,8 +631,6 @@ class TestNanoFiltration_without_CP_5ions:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
         )
-        for var, val in badly_scaled_var_lst:
-            print(var.name, val)
         assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.component
@@ -869,8 +855,6 @@ class TestNanoFiltration_with_CP_2ions:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
         )
-        for var, val in badly_scaled_var_lst:
-            print(var.name, val)
         assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.component
@@ -1100,8 +1084,6 @@ class TestNanoFiltration_without_CP_2ions:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
         )
-        for var, val in badly_scaled_var_lst:
-            print(var.name, val)
         assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.component
@@ -1350,8 +1332,6 @@ class TestNanoFiltration_with_CP_5ions_double_concentration:
         badly_scaled_var_lst = list(
             badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
         )
-        for var, val in badly_scaled_var_lst:
-            print(var.name, val)
         assert len(badly_scaled_var_lst) == 0
 
     @pytest.mark.component
@@ -1484,8 +1464,6 @@ def test_inverse_solve():
     badly_scaled_var_lst = list(
         badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
     )
-    for var, val in badly_scaled_var_lst:
-        print(var.name, val)
     assert len(badly_scaled_var_lst) == 0
 
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].unfix()
@@ -1616,8 +1594,6 @@ def test_mass_transfer_coeff_fixed():
     badly_scaled_var_lst = list(
         badly_scaled_var_generator(m.fs.unit, small=1e-5, zero=1e-12)
     )
-    for var, val in badly_scaled_var_lst:
-        print(var.name, val)
     assert len(badly_scaled_var_lst) == 0
 
     m.fs.unit.inlet.flow_mol_phase_comp[0, "Liq", "Na_+"].unfix()
@@ -1817,8 +1793,6 @@ def test_pressure_recovery_step_2_ions():
     for p in pressure_steps:
         m.fs.unit.inlet.pressure[0].fix(p)
         results = solver.solve(m)
-        # print_infeasible_constraints(m,print_expression=True,print_variables=True)
-        # print_close_to_bounds(m)
         assert_optimal_termination(results)
 
     m.fs.unit.inlet.pressure[0].fix(10e5)
@@ -1826,7 +1800,6 @@ def test_pressure_recovery_step_2_ions():
 
     for r in np.linspace(0.05, 0.97, 10):
         m.fs.unit.recovery_vol_phase.fix(r)
-        print(r)
         res = solver.solve(m, tee=False)
         assert_optimal_termination(res)
 
