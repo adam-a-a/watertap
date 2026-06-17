@@ -62,10 +62,6 @@ from idaes.models.unit_models import (
     Feed,
 )
 
-# Uncomment the following line to enable logging during testing (e.g., initialization_tester(m, outlvl=idaeslog.DEBUG))
-# import idaes.logger as idaeslog
-
-# -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
 
@@ -1789,10 +1785,6 @@ def test_pressure_recovery_step_2_ions():
     assert_optimal_termination(results)
 
     pressure_steps = np.linspace(1.8e5, 20e5, 10)
-    from watertap.core.util.model_diagnostics.infeasible import (
-        print_close_to_bounds,
-        print_infeasible_constraints,
-    )
 
     for p in pressure_steps:
         m.fs.unit.inlet.pressure[0].fix(p)
