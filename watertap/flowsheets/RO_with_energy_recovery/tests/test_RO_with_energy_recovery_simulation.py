@@ -48,7 +48,8 @@ solver = get_solver()
 # -----------------------------------------------------------------------------
 class TestROwithPX:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(erd_type="pressure_exchanger")
 
         return m
@@ -141,7 +142,7 @@ class TestROwithPX:
         m = system_frame
 
         set_operating_conditions(
-            m, water_recovery=0.5, over_pressure=0.3, solver=solver
+            m, water_recovery=0.5, over_pressure_factor=1.3, solver=solver
         )
 
         # check fixed variables
@@ -370,7 +371,8 @@ PXR brine out: 0.528 kg/s, 67424 ppm, 1.0 bar
 
 class TestROwithTurbine:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(erd_type=ERDtype.pump_as_turbine)
 
         return m
@@ -439,7 +441,8 @@ class TestROwithTurbine:
 
 class TestROnoERD:
     @pytest.fixture(scope="class")
-    def system_frame(self):
+    @classmethod
+    def system_frame(cls):
         m = build(erd_type="no_ERD")
 
         return m
@@ -503,7 +506,7 @@ class TestROnoERD:
         m = system_frame
 
         set_operating_conditions(
-            m, water_recovery=0.5, over_pressure=0.3, solver=solver
+            m, water_recovery=0.5, over_pressure_factor=1.3, solver=solver
         )
 
         # check fixed variables
