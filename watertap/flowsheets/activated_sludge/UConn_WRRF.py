@@ -10,7 +10,8 @@
 # "https://github.com/watertap-org/watertap/"
 #################################################################################
 """
-Example of activated sludge process model, based on 5 CSTR representation of the University of Connecticut's Water Resource Recovery Facility, conceptualized by Stuber's Process Systems and Operations Research Laboratory.
+Example of activated sludge process model, based on 5 CSTR representation of the University of Connecticut's
+ Water Resource Recovery Facility, conceptualized by Stuber's Process Systems and Operations Research Laboratory.
 
 Layout:
     * 5 reactors
@@ -32,13 +33,13 @@ Unit operations are modeled as follows:
 
 __author__ = "Adam Atia"
 
-from enum import Enum, auto
+import pandas as pd
+from enum import auto
 import pyomo.environ as pyo
 from pyomo.network import Arc, SequentialDecomposition
 
 from idaes.core import FlowsheetBlock
 from idaes.models.unit_models import Feed, Mixer, Separator, Product, MomentumMixingType
-from idaes.models.unit_models.separator import SplittingType
 from watertap.core.solvers import get_solver
 from idaes.core.util.model_statistics import degrees_of_freedom
 import idaes.logger as idaeslog
@@ -365,7 +366,10 @@ def reset_asm3_inlet_conditions(m, ini_dict):
         elif k == "flow_vol":
             m.fs.feed.flow_vol[0].fix(ini_dict[k] * pyo.units.m**3 / pyo.units.day)
         else:
-            raise
+            raise ValueError(
+                f"Key '{k}' in ini_dict is not a recognized inlet condition. "
+                f"Only the following keys are recognized: 'alkalinity', 'temperature', 'flow_vol'."
+            )
 
 
 if __name__ == "__main__":
@@ -517,11 +521,10 @@ if __name__ == "__main__":
         for k in solution.keys()
         if k != "alkalinity"
     }
-    import pandas as pd
 
     df = pd.DataFrame({"watertap": my_solution, "julia": solution})
     df.loc["alkalinity", "watertap"] = pyo.value(m.fs.Treated.alkalinity[0]) * 1e3
     df["percent_difference"] = (df["watertap"] - df["julia"]) / df["julia"] * 100
     df["percent_difference"] = df["percent_difference"].round(1)
 
-    df
+    print(df)

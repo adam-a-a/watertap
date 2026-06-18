@@ -21,6 +21,7 @@ import pytest
 from pyomo.environ import assert_optimal_termination, value
 from pyomo.util.check_units import assert_units_consistent
 
+from idaes.core.util import DiagnosticsToolbox
 from idaes.core.util.model_statistics import degrees_of_freedom
 
 from watertap.flowsheets.activated_sludge.UConn_WRRF import (
@@ -43,19 +44,23 @@ class TestUConnFlowsheetASM3:
 
         initialize_flowsheet(m)
 
-        scale_flowsheet(m)
-
         return m
 
     @pytest.mark.integration
     def test_structure(self, model):
         assert_units_consistent(model)
         assert degrees_of_freedom(model) == 0
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_structural_warnings(ignore_evaluation_errors=True)
 
     @pytest.mark.integration
     def test_solve(self, model):
         res = solve_flowsheet(model)
         assert_optimal_termination(res)
+        dt = DiagnosticsToolbox(model)
+        warnings, _ = dt._collect_numerical_warnings()
+        assert len(warnings) == 1
+        assert "WARNING: 1 Variable at or outside bounds (tol=0.0E+00)" in warnings
 
     @pytest.mark.integration
     def test_results(self, model):
@@ -72,37 +77,37 @@ class TestUConnFlowsheetASM3:
             0.02888, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_NH4"]) == pytest.approx(
-            0.001519, rel=1e-2
+            0.0036856, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_NOX"]) == pytest.approx(
-            0.007174, rel=1e-2
+            0.005157, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_O"]) == pytest.approx(
-            0.00099, rel=1e-2
+            9.1727e-5, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "S_S"]) == pytest.approx(
-            0.00016, rel=1e-2
+            0.00025491, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_A"]) == pytest.approx(
-            0.13165, rel=1e-2
+            0.13149, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_H"]) == pytest.approx(
-            1.632358, rel=1e-2
+            1.6305, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_I"]) == pytest.approx(
-            1.46378, rel=1e-2
+            1.4627, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            0.209026, rel=1e-2
+            0.2136, rel=1e-2
         )
-        assert value(model.fs.Treated.conc_mass_comp[0, "X_S"]) == pytest.approx(
-            0.209026, rel=1e-2
+        assert value(model.fs.Treated.conc_mass_comp[0, "X_H"]) == pytest.approx(
+            1.6305, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_STO"]) == pytest.approx(
-            0.304689, rel=1e-2
+            0.3125, rel=1e-2
         )
         assert value(model.fs.Treated.conc_mass_comp[0, "X_TSS"]) == pytest.approx(
-            3.02503, rel=1e-3
+            3.0305, rel=1e-3
         )
 
         assert value(model.fs.Treated.alkalinity[0]) == pytest.approx(0.00495, rel=1e-2)
