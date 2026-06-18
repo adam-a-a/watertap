@@ -36,6 +36,7 @@ from watertap.flowsheets.activated_sludge.UConn_WRRF import ASMModel
 
 class TestUConnFlowsheetASM3:
     @pytest.fixture(scope="class")
+    @classmethod
     def model(self):
         m = build_flowsheet(asm_model=ASMModel.asm3)
 
