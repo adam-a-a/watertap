@@ -94,5 +94,10 @@ class TestOAROwithTurbine:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_main(self):
-        main(number_of_stages=3, system_recovery=0.5)
+    def test_main_0D(self):
+        main(number_of_stages=3, system_recovery=0.5, RO_1D=False)
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_main_1D(self):
+        main(number_of_stages=3, system_recovery=0.5, RO_1D=True)

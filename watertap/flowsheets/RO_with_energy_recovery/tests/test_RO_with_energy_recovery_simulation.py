@@ -30,6 +30,7 @@ from watertap.unit_models.reverse_osmosis_0D import ReverseOsmosis0D
 from watertap.unit_models.pressure_exchanger import PressureExchanger
 from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.flowsheets.RO_with_energy_recovery.RO_with_energy_recovery import (
+    main,
     build,
     set_operating_conditions,
     initialize_system,
@@ -652,3 +653,11 @@ RO reten  : 0.528 kg/s, 67424 ppm, 72.4 bar
     def test_config_error(self, system_frame):
         with pytest.raises(Exception):
             build(erd_type="not_a_configuration")
+
+    @pytest.mark.component
+    def test_main_0D(self):
+        main(erd_type=ERDtype.pump_as_turbine, RO_1D=False)
+
+    @pytest.mark.component
+    def test_main_1D(self):
+        main(erd_type=ERDtype.pump_as_turbine, RO_1D=True)

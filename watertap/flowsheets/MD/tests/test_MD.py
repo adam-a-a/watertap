@@ -139,5 +139,10 @@ class TestMDContinuousRecirculation:
 
     @pytest.mark.requires_idaes_solver
     @pytest.mark.component
-    def test_main(self):
-        main()
+    def test_main_0D(self):
+        main(MD_1D=False)
+
+    @pytest.mark.requires_idaes_solver
+    @pytest.mark.component
+    def test_main_1D(self):
+        main(MD_1D=True)
