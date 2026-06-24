@@ -728,10 +728,26 @@ class NaClParameterData(PhysicalParameterBlock):
         )
         obj.define_custom_properties(
             {
-                "osm_coeff": {"method": "_osm_coeff"},
-                "enth_flow": {"method": "_enth_flow"},
-                "solubility_comp": {"method": "_solubility_comp"},
-                "therm_cond_phase": {"method": "_therm_cond_phase"},
+                "osm_coeff": {
+                    "doc": "Osmotic Coefficient",
+                    "units": pyunits.dimensionless,
+                    "method": "_osm_coeff",
+                },
+                "enth_flow": {
+                    "doc": "Enthalpy Flow",
+                    "units": pyunits.J / pyunits.s,
+                    "method": "_enth_flow",
+                },
+                "solubility_comp": {
+                    "doc": "Solubility",
+                    "units": pyunits.dimensionless,
+                    "method": "_solubility_comp",
+                },
+                "therm_cond_phase": {
+                    "doc": "Thermal Conductivity",
+                    "units": pyunits.W / (pyunits.m * pyunits.K),
+                    "method": "_therm_cond_phase",
+                },
             }
         )
         obj.add_default_units(
@@ -1563,7 +1579,7 @@ class NaClStateBlockData(StateBlockData):
                 * b.enth_mass_phase["Liq"]
             )
 
-        self.enth_flow = Expression(rule=rule_enth_flow)
+        self.enth_flow = Expression(rule=rule_enth_flow, doc="Enthalpy flow [J/s]")
 
     # -----------------------------------------------------------------------------
     # General Methods

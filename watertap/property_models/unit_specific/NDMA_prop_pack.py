@@ -152,7 +152,11 @@ class NDMAParameterData(PhysicalParameterBlock):
 
         obj.define_custom_properties(
             {
-                "enth_flow": {"method": "_enth_flow"},
+                "enth_flow": {
+                    "doc": "Enthalpy Flow",
+                    "units": pyunits.J / pyunits.s,
+                    "method": "_enth_flow",
+                },
             }
         )
 
@@ -617,7 +621,7 @@ class NDMAStateBlockData(StateBlockData):
                 * (b.temperature - temperature_ref)
             )
 
-        self.enth_flow = Expression(rule=rule_enth_flow)
+        self.enth_flow = Expression(rule=rule_enth_flow, doc="Enthalpy flow [J/s]")
 
     # -----------------------------------------------------------------------------
     # General Methods

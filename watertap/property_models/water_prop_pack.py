@@ -548,11 +548,31 @@ class WaterParameterData(PhysicalParameterBlock):
 
         obj.define_custom_properties(
             {
-                "dh_vap_mass": {"method": "_dh_vap_mass"},
-                "enth_flow_phase": {"method": "_enth_flow_phase"},
-                "temperature_sat_solvent": {"method": "_temperature_sat_solvent"},
-                "specific_vol_sat_phase": {"method": "_specific_vol_sat_phase"},
-                "specific_vol_phase": {"method": "_specific_vol_phase"},
+                "dh_vap_mass": {
+                    "doc": "Latent Heat of Vaporization",
+                    "units": pyunits.J / pyunits.kg,
+                    "method": "_dh_vap_mass",
+                },
+                "enth_flow": {
+                    "doc": "Enthalpy Flow",
+                    "units": pyunits.J / pyunits.s,
+                    "method": "_enth_flow",
+                },
+                "temperature_sat_solvent": {
+                    "doc": "Saturation Temperature of Solvent",
+                    "units": pyunits.K,
+                    "method": "_temperature_sat_solvent",
+                },
+                "specific_vol_sat_phase": {
+                    "doc": "Specific Volume of Saturated Steam",
+                    "units": pyunits.m**3 / pyunits.kg,
+                    "method": "_specific_vol_sat_phase",
+                },
+                "specific_vol_phase": {
+                    "doc": "Specific Volume of Steam",
+                    "units": pyunits.m**3 / pyunits.kg,
+                    "method": "_specific_vol_phase",
+                },
             }
         )
 

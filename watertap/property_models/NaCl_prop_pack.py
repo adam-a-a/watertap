@@ -802,7 +802,7 @@ class NaClStateBlockData(StateBlockData):
                 * b.enth_mass_phase["Liq"]
             )
 
-        self.enth_flow = Expression(rule=rule_enth_flow)
+        self.enth_flow = Expression(rule=rule_enth_flow, doc="Enthalpy flow [J/s]")
 
     # TODO: add vapor pressure, specific heat, thermal conductivity,
     #   and heat of vaporization
