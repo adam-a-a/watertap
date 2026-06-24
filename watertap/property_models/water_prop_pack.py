@@ -553,10 +553,10 @@ class WaterParameterData(PhysicalParameterBlock):
                     "units": pyunits.J / pyunits.kg,
                     "method": "_dh_vap_mass",
                 },
-                "enth_flow": {
+                "enth_flow_phase": {
                     "doc": "Enthalpy Flow",
                     "units": pyunits.J / pyunits.s,
-                    "method": "_enth_flow",
+                    "method": "_enth_flow_phase",
                 },
                 "temperature_sat_solvent": {
                     "doc": "Saturation Temperature of Solvent",
