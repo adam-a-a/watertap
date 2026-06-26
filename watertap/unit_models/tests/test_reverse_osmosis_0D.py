@@ -1190,7 +1190,7 @@ def test_RO_with_MCAS_NaCl_CaSO4():
         material_flow_basis="mass",
     )
 
-    m.fs.unit = ReverseOsmosis1D(
+    m.fs.unit = ReverseOsmosis0D(
         property_package=m.fs.props,
         has_pressure_change=True,
         concentration_polarization_type=ConcentrationPolarizationType.calculated,
