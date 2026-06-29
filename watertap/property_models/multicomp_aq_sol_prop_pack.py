@@ -2589,7 +2589,7 @@ class MCASStateBlockData(StateBlockData):
         elif self.params.config.material_flow_basis == MaterialFlowBasis.mass:
             return self.conc_mass_phase_comp[p, j]
 
-    #TODO: make property package compatible with dynamics when energy balance is included
+    # TODO: make property package compatible with dynamics when energy balance is included
     # def get_enthalpy_density_terms(self, p):
     #     """Create enthalpy density terms."""
 
