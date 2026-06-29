@@ -1359,7 +1359,9 @@ def test_RO_dynamic_with_Na_Cl_ions():
             (800 + 100 / ramp_len * i) * 6895
         )  # feed pressure (Pa)
 
-    m.fs.unit.feed_side.properties[:, 0].assert_electroneutrality(   defined_state=True, adjust_by_ion="Cl_-")
+    m.fs.unit.feed_side.properties[:, 0].assert_electroneutrality(
+        defined_state=True, adjust_by_ion="Cl_-"
+    )
 
     m.fs.unit.inlet.temperature[:].fix(293.15)  # feed temperature (K)
 
