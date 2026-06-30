@@ -219,6 +219,11 @@ jobs:
           - os: win64
             os-version: windows-2022
     steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+        
     - name: Set up Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v4
       with:
