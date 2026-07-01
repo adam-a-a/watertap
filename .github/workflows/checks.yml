@@ -239,7 +239,7 @@ jobs:
         _repo_full_name: watertap-org/watertap
         _ref_to_install: main
       run: |
-        _install_url="https://github.com{_repo_full_name}/archive/${_ref_to_install}.zip"
+       _install_url="https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip"
         echo "_install_url=${_install_url}" >> $GITHUB_ENV
         echo "Install URL: ${_install_url}"
 
@@ -249,7 +249,7 @@ jobs:
         _repo_full_name: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
         _ref_to_install: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
       run: |
-        _install_url="https://github.com{_repo_full_name}/archive/${_ref_to_install}.zip"
+        _install_url="https://github.com/${_repo_full_name}/archive/${_ref_to_install}.zip"
         echo "_install_url=${_install_url}" >> $GITHUB_ENV
         echo "Install URL: ${_install_url}"
 
