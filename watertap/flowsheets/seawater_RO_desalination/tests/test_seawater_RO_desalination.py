@@ -179,7 +179,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
     assert pytest.approx(2.9557e-2, rel=1e-4) == value(
         muni.outlet.flow_mass_comp[0.0, "tds"]
     )
-    
+
     assert m.fs.costing.base_currency == pyunits.USD_2023
     assert value(m.fs.costing.LCOW) == pytest.approx(1.3638, rel=1e-3)
 

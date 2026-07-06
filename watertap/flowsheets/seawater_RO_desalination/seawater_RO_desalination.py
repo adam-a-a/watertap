@@ -639,12 +639,8 @@ def add_costing(m):
     desal.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     if m.erd_type == "pressure_exchanger":
         # desal.S1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
-        desal.M1.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing
-        )
-        desal.PXR.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=m.fs.costing
-        )
+        desal.M1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        desal.PXR.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         desal.P2.costing = UnitModelCostingBlock(
             flowsheet_costing_block=m.fs.costing,
             costing_method_arguments={"cost_electricity_flow": True},
@@ -679,9 +675,7 @@ def add_costing(m):
     psttrt.storage_tank_2.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing
     )
-    psttrt.uv_aop.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing
-    )
+    psttrt.uv_aop.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     psttrt.co2_addition.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing
     )
@@ -693,18 +687,15 @@ def add_costing(m):
     )
 
     # Product and disposal
-    m.fs.municipal.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing
-    )
-    m.fs.landfill.costing = UnitModelCostingBlock(
-        flowsheet_costing_block=m.fs.costing
-    )
+    m.fs.municipal.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    m.fs.landfill.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     # Aggregate unit level costs and calculate overall process costs
     m.fs.costing.cost_process()
     m.fs.costing.add_LCOW(m.fs.municipal.properties[0].flow_vol)
     m.fs.costing.add_specific_energy_consumption(m.fs.municipal.properties[0].flow_vol)
     assert_units_consistent(m)
+
 
 def display_costing(m):
     m.fs.costing.total_capital_cost.display()
