@@ -647,7 +647,11 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
 
     # System metrics
     base_currency_str = str(fs.costing.base_currency)
-    base_period_str = "year" if fs.costing.base_period == pyunits.year else str(fs.costing.base_period)
+    base_period_str = (
+        "year"
+        if fs.costing.base_period == pyunits.year
+        else str(fs.costing.base_period)
+    )
 
     exports.add(
         obj=fs.costing.total_capital_cost,
