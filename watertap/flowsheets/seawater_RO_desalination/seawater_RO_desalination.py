@@ -66,7 +66,6 @@ from watertap.unit_models.zero_order import (
     LandfillZO,
 )
 from watertap.costing.zero_order_costing import ZeroOrderCosting
-from watertap.costing import WaterTAPCosting
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
