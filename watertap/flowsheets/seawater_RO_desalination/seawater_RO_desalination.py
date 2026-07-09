@@ -110,7 +110,7 @@ def build(erd_type=None, RO_1D=False):
 
     m.fs.properties = MCASParameterBlock(solute_list=["tds", "tss"],
                                          diffusivity_data={("Liq", "tds"): 1e-9, ("Liq", "tss"): 1e-9},
-                                         mw_data={"tds": None, "tss": None},
+                                         mw_data={"tds": 58e-3, "tss": 100e-3},
                                          material_flow_basis=MaterialFlowBasis.mass,
                                          ignore_neutral_charge=True,
                                          density_calculation=DensityCalculation.seawater
