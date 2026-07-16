@@ -696,6 +696,7 @@ def add_costing(m):
     )
     desal.RO.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     if m.erd_type == "pressure_exchanger":
+        # NOTE: Costing for the S1 splitter is neglected. Keeping the commented line below for awareness.
         # desal.S1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         desal.M1.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
         desal.PXR.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
@@ -705,29 +706,15 @@ def add_costing(m):
         )
     elif m.erd_type == "pump_as_turbine":
         pass
+        # NOTE: Costing for the ERD is neglected. Keeping the commented line below for awareness.
+        # This change was applied here: https://github.com/watertap-org/watertap/commit/7180306a61755e6bc640f6b18f03a572f6de3850
+        # TODO: There is a need to verify if the costing for the ERD should be reincorporated with the line below, or if it is somehow accounted for already and uncommenting the line below would lead to double counting.
         # desal.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         raise ConfigurationError(
             f"erd_type was {m.erd_type}, costing only implemented "
             "for pressure_exchanger or pump_as_turbine"
         )
-
-    # # For non-zero order unit operations, we need to register costed flows
-    # # separately.
-    # # We will register electricity flow for detailed models with the ZO
-    # # Costing package
-    # m.fs.costing.cost_flow(desal.P1.work_mechanical[0], "electricity")
-    # if m.erd_type == "pressure_exchanger":
-    #     m.fs.costing.cost_flow(desal.P2.work_mechanical[0], "electricity")
-    # elif m.erd_type == "pump_as_turbine":
-    #     pass
-    #     # m.fs.costing.cost_flow(
-    #     #     desal.ERD.work_mechanical[0], "electricity")
-    # else:
-    #     raise ConfigurationError(
-    #         f"erd_type was {m.erd_type}, costing only implemented "
-    #         "for pressure_exchanger or pump_as_turbine"
-    #     )
 
     # Post-treatment units
     psttrt.storage_tank_2.costing = UnitModelCostingBlock(
