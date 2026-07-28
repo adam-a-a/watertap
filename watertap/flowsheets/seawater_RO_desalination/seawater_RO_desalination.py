@@ -34,7 +34,11 @@ import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
 from idaes.core import UnitModelCostingBlock
 
-from watertap.property_models.multicomp_aq_sol_prop_pack import MCASParameterBlock, DensityCalculation, MaterialFlowBasis
+from watertap.property_models.multicomp_aq_sol_prop_pack import (
+    MCASParameterBlock,
+    DensityCalculation,
+    MaterialFlowBasis,
+)
 from watertap.unit_models.reverse_osmosis_0D import (
     ReverseOsmosis0D,
     ConcentrationPolarizationType,
@@ -81,7 +85,9 @@ def main(erd_type="pressure_exchanger", RO_1D=False):
 
     assert_degrees_of_freedom(m, 0)
 
-    solve(m, checkpoint=f" solve flowsheet after initializing {erd_type} system", tee=True)
+    solve(
+        m, checkpoint=f" solve flowsheet after initializing {erd_type} system", tee=True
+    )
     display_results(m)
 
     add_costing(m)
@@ -105,12 +111,13 @@ def build(erd_type=None, RO_1D=False):
 
     m.fs = FlowsheetBlock(dynamic=False)
 
-    m.fs.properties = MCASParameterBlock(solute_list=["tds", "tss"],
-                                         diffusivity_data={("Liq", "tds"): 1e-9, ("Liq", "tss"): 1e-9},
-                                         mw_data={"tds": 31.4e-3, "tss": 100e-3},
-                                         material_flow_basis=MaterialFlowBasis.mass,
-                                         ignore_neutral_charge=True,
-                                         density_calculation=DensityCalculation.seawater
+    m.fs.properties = MCASParameterBlock(
+        solute_list=["tds", "tss"],
+        diffusivity_data={("Liq", "tds"): 1e-9, ("Liq", "tss"): 1e-9},
+        mw_data={"tds": 31.4e-3, "tss": 100e-3},
+        material_flow_basis=MaterialFlowBasis.mass,
+        ignore_neutral_charge=True,
+        density_calculation=DensityCalculation.seawater,
     )
 
     # block structure
@@ -194,9 +201,7 @@ def build(erd_type=None, RO_1D=False):
         database=m.db,
         process_subtype="hydrogen_peroxide",
     )
-    psttrt.co2_addition = CO2AdditionZO(
-        property_package=m.fs.properties, database=m.db
-    )
+    psttrt.co2_addition = CO2AdditionZO(property_package=m.fs.properties, database=m.db)
     psttrt.lime_addition = ChemicalAdditionZO(
         property_package=m.fs.properties, database=m.db, process_subtype="lime"
     )
@@ -278,7 +283,8 @@ def build(erd_type=None, RO_1D=False):
     )
 
     if erd_type == "pressure_exchanger":
-        prtrt.s_09 = Arc(source=prtrt.cartridge_filtration.treated, destination=desal.S1.inlet
+        prtrt.s_09 = Arc(
+            source=prtrt.cartridge_filtration.treated, destination=desal.S1.inlet
         )
         desal.s01 = Arc(source=desal.S1.P1, destination=desal.P1.inlet)
         desal.s02 = Arc(source=desal.P1.outlet, destination=desal.M1.P1)
@@ -291,7 +297,9 @@ def build(erd_type=None, RO_1D=False):
             source=desal.PXR.brine_outlet, destination=m.fs.disposal.inlet
         )
     elif erd_type == "pump_as_turbine":
-        prtrt.s_09 = Arc(source=prtrt.cartridge_filtration.treated, destination=desal.P1.inlet)
+        prtrt.s_09 = Arc(
+            source=prtrt.cartridge_filtration.treated, destination=desal.P1.inlet
+        )
         desal.s01 = Arc(source=desal.P1.outlet, destination=desal.RO.inlet)
         desal.s02 = Arc(source=desal.RO.retentate, destination=desal.ERD.inlet)
         m.fs.s_disposal = Arc(source=desal.ERD.outlet, destination=m.fs.disposal.inlet)
@@ -332,10 +340,10 @@ def build(erd_type=None, RO_1D=False):
         iscale.set_scaling_factor(desal.PXR.brine_side.work, 1e-5)
     elif erd_type == "pump_as_turbine":
         iscale.set_scaling_factor(desal.ERD.control_volume.work, 1e-5)
-    
+
     if erd_type == "pressure_exchanger":
         desal.S1.mixed_state[0].flow_vol_phase
-        desal.RO.feed_side.properties[0,1].flow_vol_phase
+        desal.RO.feed_side.properties[0, 1].flow_vol_phase
     # calculate and propagate scaling factors
     iscale.calculate_scaling_factors(m)
 
@@ -441,7 +449,7 @@ def set_operating_conditions(m):
     for u in (prtrt.ferric_chloride_addition, prtrt.anti_scalant_addition):
         iscale.set_scaling_factor(u.chemical_flow_vol, 1e6)
         iscale.constraint_scaling_transform(u.chemical_flow_vol_constraint, 1e6)
-    
+
     # cartridge filtration
     m.db.get_unit_operation_parameters("cartridge_filtration")
     prtrt.cartridge_filtration.load_parameters_from_database(use_default_removal=True)
@@ -538,8 +546,8 @@ def initialize_system(m, RO_1D=False):
     # initialize desalination
     propagate_state(prtrt.s_09)
 
-    if m.erd_type == "pressure_exchanger": 
-        comps =m.fs.properties.component_list 
+    if m.erd_type == "pressure_exchanger":
+        comps = m.fs.properties.component_list
         desal.S1.split_fraction[0, "PXR"].fix(0.55)
         desal.S1.initialize()
         desal.S1.split_fraction[0, "PXR"].unfix()
@@ -556,9 +564,10 @@ def initialize_system(m, RO_1D=False):
         desal.M1.initialize()
         propagate_state(desal.s03)
         desal.RO.initialize()
-        split_vol = value(desal.RO.feed_side.properties[0, 1].flow_vol_phase["Liq"] 
-                          / desal.S1.mixed_state[0].flow_vol_phase["Liq"]
-                          )
+        split_vol = value(
+            desal.RO.feed_side.properties[0, 1].flow_vol_phase["Liq"]
+            / desal.S1.mixed_state[0].flow_vol_phase["Liq"]
+        )
         desal.S1.split_fraction[0, "PXR"].fix(split_vol)
         desal.S1.initialize()
         desal.S1.split_fraction[0, "PXR"].unfix()
@@ -571,7 +580,10 @@ def initialize_system(m, RO_1D=False):
         propagate_state(desal.s06)
 
         flags = fix_state_vars(desal.S1.mixed_state)
-        solve(desal,checkpoint=f"solve flowsheet after initializing desalination with {m.erd_type}")
+        solve(
+            desal,
+            checkpoint=f"solve flowsheet after initializing desalination with {m.erd_type}",
+        )
         revert_state_vars(desal.S1.mixed_state, flags)
     else:
         desal.P1.initialize()
@@ -591,7 +603,7 @@ def initialize_system(m, RO_1D=False):
         # desal.RO.feed_side.properties[0, 0].pressure = value(
         #     desal.P1.control_volume.properties_out[0].pressure
         # )
-   
+
         desal.RO.initialize(outlvl=idaeslog.DEBUG)
         propagate_state(desal.s02)
         desal.ERD.initialize()
@@ -605,11 +617,10 @@ def initialize_system(m, RO_1D=False):
     # initialize posttreatment
     propagate_state(desal.s_permeate_to_storage)
 
-
     flags = fix_state_vars(psttrt.storage_tank_2.properties)
     solve(psttrt, checkpoint="solve flowsheet after initializing post-treatment")
     revert_state_vars(psttrt.storage_tank_2.properties, flags)
-    
+
     propagate_state(m.fs.s_municipal)
     m.fs.municipal.initialize()
     propagate_state(m.fs.s_disposal)
@@ -617,6 +628,7 @@ def initialize_system(m, RO_1D=False):
     propagate_state(m.fs.s_landfill)
     m.fs.landfill.initialize()
     propagate_state(desal.s_permeate_to_storage)
+
 
 def solve(blk, solver=None, checkpoint=None, tee=False, fail_flag=True):
     if solver is None:
