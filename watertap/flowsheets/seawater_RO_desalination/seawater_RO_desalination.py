@@ -27,7 +27,6 @@ from idaes.core.util.initialization import (
     revert_state_vars,
 )
 from idaes.core.util.exceptions import ConfigurationError
-from idaes.models.unit_models.translator import Translator
 from idaes.models.unit_models import Mixer, Separator, Product, Feed
 from idaes.models.unit_models.mixer import MomentumMixingType
 import idaes.core.util.scaling as iscale
@@ -53,9 +52,7 @@ from watertap.unit_models.pressure_changer import Pump, EnergyRecoveryDevice
 from watertap.core.util.initialization import assert_degrees_of_freedom, check_solve
 
 from watertap.core.wt_database import Database
-import watertap.core.zero_order_properties as prop_ZO
 from watertap.unit_models.zero_order import (
-    FeedZO,
     SWOnshoreIntakeZO,
     ChemicalAdditionZO,
     ChlorinationZO,
