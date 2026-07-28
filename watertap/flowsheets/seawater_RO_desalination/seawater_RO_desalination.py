@@ -72,19 +72,18 @@ _log = idaeslog.getLogger(__name__)
 
 
 def main(erd_type="pressure_exchanger", RO_1D=False):
+    # try:
     m = build(erd_type=erd_type, RO_1D=RO_1D)
 
     set_operating_conditions(m)
     assert_degrees_of_freedom(m, 0)
-    # try:
     initialize_system(m, RO_1D=RO_1D)
- 
+
     assert_degrees_of_freedom(m, 0)
 
-    solve(m, checkpoint=f" solve flowsheet after initializing {erd_type} system")
+    solve(m, checkpoint=f" solve flowsheet after initializing {erd_type} system", tee=True)
     display_results(m)
-    # except:
-    #     return m
+
     add_costing(m)
     m.fs.costing.initialize()
     assert_degrees_of_freedom(m, 0)
@@ -93,6 +92,9 @@ def main(erd_type="pressure_exchanger", RO_1D=False):
     display_costing(m)
 
     return m
+    # except Exception as e:
+    #     _log.warning(f"failed due to {e}")
+    #     return m
 
 
 def build(erd_type=None, RO_1D=False):
@@ -119,7 +121,7 @@ def build(erd_type=None, RO_1D=False):
     # unit models
     m.fs.feed = Feed(property_package=m.fs.properties)
     # pretreatment
-    prtrt.intake = SWOnshoreIntakeZO(property_package=m.fs.properties)
+    prtrt.intake = SWOnshoreIntakeZO(property_package=m.fs.properties, database=m.db)
     prtrt.ferric_chloride_addition = ChemicalAdditionZO(
         property_package=m.fs.properties,
         database=m.db,
@@ -405,7 +407,8 @@ def set_operating_conditions(m):
 
     # ---pretreatment---
     # intake
-
+    m.db.get_unit_operation_parameters("sw_onshore_intake")
+    prtrt.intake.load_parameters_from_database()
     # ferric chloride
     m.db.get_unit_operation_parameters("chemical_addition")
     prtrt.ferric_chloride_addition.load_parameters_from_database()
@@ -570,61 +573,34 @@ def initialize_system(m, RO_1D=False):
         flags = fix_state_vars(desal.S1.mixed_state)
         solve(desal,checkpoint=f"solve flowsheet after initializing desalination with {m.erd_type}")
         revert_state_vars(desal.S1.mixed_state, flags)
-    # if RO_1D:
-    #     desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "H2O"] = value(
-    #         m.fs.feed.properties[0].flow_mass_comp["H2O"]
-    #     )
-    #     desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "tds"] = value(
-    #         m.fs.feed.properties[0].flow_mass_comp["tds"]
-    #     )
-    #     desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "tss"] = value(
-    #         prtrt.cartridge_filtration.properties_treated[0].flow_mass_comp["tss"]
-    #     )
-    #     desal.RO.feed_side.properties[0, 0].temperature = value(
-    #         m.fs.feed.properties[0].temperature
-    #     )
-    #     desal.RO.feed_side.properties[0, 0].pressure = value(
-    #         desal.P1.control_volume.properties_out[0].pressure
-    #     )
-    # else:
-    #     desal.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "H2O"] = value(
-    #         m.fs.feed.properties[0].flow_mass_comp["H2O"]
-    #     )
-    #     desal.RO.feed_side.properties_in[0].flow_mass_phase_comp["Liq", "tds"] = value(
-    #         m.fs.feed.properties[0].flow_mass_comp["tds"]
-    #     )
-    #     desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "tss"] = value(
-    #         prtrt.cartridge_filtration.properties_treated[0].flow_mass_comp["tss"]
-    #     )
-    #     desal.RO.feed_side.properties_in[0].temperature = value(
-    #         m.fs.feed.properties[0].temperature
-    #     )
-    #     desal.RO.feed_side.properties_in[0].pressure = value(
-    #         desal.P1.control_volume.properties_out[0].pressure
-    #     )
-    # try:
-    #     desal.RO.initialize(outlvl=idaeslog.DEBUG)
-    # except:
-    #     pass
-    # solve(
-    #         desal,
-    #         # checkpoint=f"solve flowsheet after initializing {m.erd_type} desalination",
-    #     )
-    # propagate_state(m.fs.s_tb_desal)
-    # if m.erd_type == "pressure_exchanger":
-    #     flags = fix_state_vars(desal.S1.mixed_state)
-    #     solve(
-    #         desal,
-    #         checkpoint=f"solve flowsheet after initializing {m.erd_type} desalination",
-    #     )
-    #     revert_state_vars(desal.S1.mixed_state, flags)
-    # elif m.erd_type == "pump_as_turbine":
-    #     flags = fix_state_vars(desal.P1.control_volume.properties_in)
-    #     solve(
-    #         desal,
-    #         checkpoint=f"solve flowsheet after initializing {m.erd_type} desalination",
-    #     )
-    #     revert_state_vars(desal.P1.control_volume.properties_in, flags)
+    else:
+        desal.P1.initialize()
+        propagate_state(desal.s01)
+        # desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "H2O"] = value(
+        #     m.fs.feed.properties[0].flow_mass_comp["H2O"]
+        # )
+        # desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "tds"] = value(
+        #     m.fs.feed.properties[0].flow_mass_comp["tds"]
+        # )
+        # desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "tss"] = value(
+        #     prtrt.cartridge_filtration.properties_treated[0].flow_mass_comp["tss"]
+        # )
+        # desal.RO.feed_side.properties[0, 0].temperature = value(
+        #     m.fs.feed.properties[0].temperature
+        # )
+        # desal.RO.feed_side.properties[0, 0].pressure = value(
+        #     desal.P1.control_volume.properties_out[0].pressure
+        # )
+   
+        desal.RO.initialize(outlvl=idaeslog.DEBUG)
+        propagate_state(desal.s02)
+        desal.ERD.initialize()
+        propagate_state(m.fs.s_disposal)
+
+        # solve(
+        #         desal,
+        #         checkpoint=f"solve flowsheet after initializing {m.erd_type} desalination",
+        #     )
 
     # initialize posttreatment
     propagate_state(desal.s_permeate_to_storage)
@@ -692,8 +668,8 @@ def add_costing(m):
     m.fs.costing.base_currency = pyunits.USD_2023
     # Add costing to zero order units
     # Pre-treatment units
-    # This really looks like it should be a feed block in its own right
-    # prtrt.intake.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+    # Intake unit really looks like it should be a feed block in its own right
+    prtrt.intake.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
 
     prtrt.ferric_chloride_addition.costing = UnitModelCostingBlock(
         flowsheet_costing_block=m.fs.costing
@@ -740,8 +716,7 @@ def add_costing(m):
         pass
         # NOTE: Costing for the ERD is neglected. Keeping the commented line below for awareness.
         # This change was applied here: https://github.com/watertap-org/watertap/commit/7180306a61755e6bc640f6b18f03a572f6de3850
-        # TODO: There is a need to verify if the costing for the ERD should be reincorporated with the line below, or if it is somehow accounted for already and uncommenting the line below would lead to double counting.
-        # desal.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
+        desal.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         raise ConfigurationError(
             f"erd_type was {m.erd_type}, costing only implemented "
@@ -803,13 +778,4 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    from idaes.core.util import DiagnosticsToolbox
-    from watertap.core.util.model_diagnostics.infeasible import *
-
-    m = main(erd_type="pressure_exchanger", RO_1D=False)
-
-
-    print_infeasible_constraints(m.fs.desalination.RO, print_expression=True,print_variables=True)
-    dt = DiagnosticsToolbox(m.fs.desalination.RO)
-    dt.report_structural_issues()
-    dt.report_numerical_issues()
+    m = main(erd_type="pressure_exchanger", RO_1D=True)
