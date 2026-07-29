@@ -73,7 +73,6 @@ _log = idaeslog.getLogger(__name__)
 
 
 def main(erd_type="pressure_exchanger", RO_1D=False):
-    # try:
     m = build(erd_type=erd_type, RO_1D=RO_1D)
 
     set_operating_conditions(m)
@@ -95,9 +94,7 @@ def main(erd_type="pressure_exchanger", RO_1D=False):
     display_costing(m)
 
     return m
-    # except Exception as e:
-    #     _log.warning(f"failed due to {e}")
-    #     return m
+
 
 
 def build(erd_type=None, RO_1D=False):
@@ -213,37 +210,6 @@ def build(erd_type=None, RO_1D=False):
     m.fs.landfill = LandfillZO(property_package=m.fs.properties, database=m.db)
     m.fs.disposal = Product(property_package=m.fs.properties)
 
-    # translator blocks
-    # m.fs.tb_prtrt_desal = Translator(
-    #     inlet_property_package=m.fs.properties, outlet_property_package=m.fs.properties
-    # )
-
-    # @m.fs.tb_prtrt_desal.Constraint(["H2O", "tds"])
-    # def eq_flow_mass_comp(blk, j):
-    #     if j == "tds":
-    #         jj = "TDS"
-    #     else:
-    #         jj = j
-    #     return (
-    #         blk.properties_in[0].flow_mass_comp[j]
-    #         == blk.properties_out[0].flow_mass_phase_comp["Liq", jj]
-    #     )
-
-    # m.fs.tb_desal_psttrt = Translator(
-    #     inlet_property_package=m.fs.properties, outlet_property_package=m.fs.properties
-    # )
-
-    # @m.fs.tb_desal_psttrt.Constraint(["H2O", "TDS"])
-    # def eq_flow_mass_comp(blk, j):  # pylint: disable=function-redefined
-    #     if j == "TDS":
-    #         jj = "tds"
-    #     else:
-    #         jj = j
-    #     return (
-    #         blk.properties_in[0].flow_mass_phase_comp["Liq", j]
-    #         == blk.properties_out[0].flow_mass_comp[jj]
-    #     )
-
     # connections
     m.fs.s_feed = Arc(source=m.fs.feed.outlet, destination=prtrt.intake.inlet)
     prtrt.s01 = Arc(
@@ -321,13 +287,6 @@ def build(erd_type=None, RO_1D=False):
     TransformationFactory("network.expand_arcs").apply_to(m)
 
     # scaling
-    # set default property values
-    # m.fs.properties.set_default_scaling(
-    #     "flow_mass_phase_comp", 1e-3, index=("Liq", "H2O")
-    # )
-    # m.fs.properties.set_default_scaling(
-    #     "flow_mass_phase_comp", 1e-1, index=("Liq", "TDS")
-    # )
     # set unit model values
     iscale.set_scaling_factor(desal.P1.control_volume.work, 1e-5)
     iscale.set_scaling_factor(desal.RO.area, 1e-4)
@@ -397,18 +356,8 @@ def set_operating_conditions(m):
         1 / value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "tss"]),
         index=("Liq", "tss"),
     )
-    # iscale.set_scaling_factor(desal.RO.feed_side.properties_in[0].mass_frac_phase_comp["Liq", "tss"], 1e6)
-    # iscale.set_scaling_factor(desal.RO.feed_side.properties_out[0].mass_frac_phase_comp["Liq", "tss"], 1e6)
-    # iscale.set_scaling_factor(desal.RO.mixed_permeate[0].flow_mass_phase_comp["Liq", "tss"], 10)
+ 
     iscale.calculate_scaling_factors(m)
-
-    # m.fs.feed.flow_vol[0].fix(flow_vol)
-    # m.fs.feed.conc_mass_comp[0, "tds"].fix(conc_mass_tds)
-    # m.fs.feed.conc_mass_comp[0, "tss"].fix(conc_mass_tss)
-    # solve(m.fs.feed, checkpoint="solve feed block")
-
-    # m.fs.tb_prtrt_desal.properties_out[0].temperature.fix(temperature)
-    # m.fs.tb_prtrt_desal.properties_out[0].pressure.fix(pressure)
 
     # ---pretreatment---
     # intake
@@ -468,7 +417,6 @@ def set_operating_conditions(m):
     )  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     desal.RO.width.fix(1000)  # stage width [m]
-    # desal.RO.recovery_vol_phase[0, "Liq"].fix(0.4)
     desal.RO.area.fix(
         flow_vol * 4.5e4 * pyunits.s / pyunits.m
     )  # stage area [m2] TODO: replace with actual area
@@ -526,7 +474,7 @@ def set_operating_conditions(m):
     m.fs.landfill.load_parameters_from_database()
 
 
-def initialize_system(m, RO_1D=False):
+def initialize_system(m):
     prtrt = m.fs.pretreatment
     desal = m.fs.desalination
     psttrt = m.fs.posttreatment
@@ -585,31 +533,10 @@ def initialize_system(m, RO_1D=False):
     else:
         desal.P1.initialize()
         propagate_state(desal.s01)
-        # desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "H2O"] = value(
-        #     m.fs.feed.properties[0].flow_mass_comp["H2O"]
-        # )
-        # desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "tds"] = value(
-        #     m.fs.feed.properties[0].flow_mass_comp["tds"]
-        # )
-        # desal.RO.feed_side.properties[0, 0].flow_mass_phase_comp["Liq", "tss"] = value(
-        #     prtrt.cartridge_filtration.properties_treated[0].flow_mass_comp["tss"]
-        # )
-        # desal.RO.feed_side.properties[0, 0].temperature = value(
-        #     m.fs.feed.properties[0].temperature
-        # )
-        # desal.RO.feed_side.properties[0, 0].pressure = value(
-        #     desal.P1.control_volume.properties_out[0].pressure
-        # )
-
         desal.RO.initialize(outlvl=idaeslog.DEBUG)
         propagate_state(desal.s02)
         desal.ERD.initialize()
         propagate_state(m.fs.s_disposal)
-
-        # solve(
-        #         desal,
-        #         checkpoint=f"solve flowsheet after initializing {m.erd_type} desalination",
-        #     )
 
     # initialize posttreatment
     propagate_state(desal.s_permeate_to_storage)
@@ -784,4 +711,4 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    m = main(erd_type="pressure_exchanger", RO_1D=True)
+    m = main(erd_type="pump_as_turbine", RO_1D=False)
