@@ -96,7 +96,6 @@ def main(erd_type="pressure_exchanger", RO_1D=False):
     return m
 
 
-
 def build(erd_type=None, RO_1D=False):
     # flowsheet set up
     m = ConcreteModel()
@@ -356,7 +355,7 @@ def set_operating_conditions(m):
         1 / value(m.fs.feed.properties[0].flow_mass_phase_comp["Liq", "tss"]),
         index=("Liq", "tss"),
     )
- 
+
     iscale.calculate_scaling_factors(m)
 
     # ---pretreatment---

@@ -20,13 +20,19 @@ from watertap.flowsheets.seawater_RO_desalination.seawater_RO_desalination impor
 # -----------------------------------------------------------------------------
 @pytest.mark.component
 def test_seawater_RO_desalination_pressure_exchanger():
-    #NOTE: testing 0D RO by default
+    # NOTE: testing 0D RO by default
     m = main(erd_type="pressure_exchanger")
 
     f = m.fs.feed
-    assert pytest.approx(305.63, rel=1e-4) == value(f.flow_mass_phase_comp[0, "Liq", "H2O"])
-    assert pytest.approx(10.822, rel=1e-4) == value(f.flow_mass_phase_comp[0, "Liq", "tds"])
-    assert pytest.approx(9.2760e-3, rel=1e-4) == value(f.flow_mass_phase_comp[0, "Liq", "tss"])
+    assert pytest.approx(305.63, rel=1e-4) == value(
+        f.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+    assert pytest.approx(10.822, rel=1e-4) == value(
+        f.flow_mass_phase_comp[0, "Liq", "tds"]
+    )
+    assert pytest.approx(9.2760e-3, rel=1e-4) == value(
+        f.flow_mass_phase_comp[0, "Liq", "tss"]
+    )
     assert pytest.approx(0.3092, rel=1e-4) == value(f.properties[0].flow_vol)
 
     p1 = m.fs.desalination.P1
@@ -104,13 +110,19 @@ def test_seawater_RO_desalination_pressure_exchanger():
 
 @pytest.mark.component
 def test_seawater_RO_desalination_pump_as_turbine():
-    #NOTE: testing 0D RO by default
+    # NOTE: testing 0D RO by default
     m = main(erd_type="pump_as_turbine")
 
     f = m.fs.feed
-    assert pytest.approx(305.63, rel=1e-4) == value(f.flow_mass_phase_comp[0, "Liq", "H2O"])
-    assert pytest.approx(10.822, rel=1e-4) == value(f.flow_mass_phase_comp[0, "Liq", "tds"])
-    assert pytest.approx(9.2760e-3, rel=1e-4) == value(f.flow_mass_phase_comp[0, "Liq", "tss"])
+    assert pytest.approx(305.63, rel=1e-4) == value(
+        f.flow_mass_phase_comp[0, "Liq", "H2O"]
+    )
+    assert pytest.approx(10.822, rel=1e-4) == value(
+        f.flow_mass_phase_comp[0, "Liq", "tds"]
+    )
+    assert pytest.approx(9.2760e-3, rel=1e-4) == value(
+        f.flow_mass_phase_comp[0, "Liq", "tss"]
+    )
     assert pytest.approx(0.3092, rel=1e-4) == value(f.properties[0].flow_vol)
 
     p1 = m.fs.desalination.P1
