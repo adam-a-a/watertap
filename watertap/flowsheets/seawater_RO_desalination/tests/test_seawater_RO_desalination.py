@@ -45,7 +45,7 @@ def test_seawater_RO_desalination_pressure_exchanger():
         p1.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(4.6800, rel=1e-4) == value(
-        p1.inlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        p1.inlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.00, rel=1e-4) == value(p1.inlet.temperature[0.0])
     assert pytest.approx(1.0e5, rel=1e-4) == value(p1.inlet.pressure[0.0])
@@ -53,7 +53,7 @@ def test_seawater_RO_desalination_pressure_exchanger():
         p1.outlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(4.6800, rel=1e-4) == value(
-        p1.outlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        p1.outlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.00, rel=1e-4) == value(p1.outlet.temperature[0.0])
     assert pytest.approx(7.0e6, rel=1e-4) == value(p1.outlet.pressure[0.0])
@@ -68,7 +68,7 @@ def test_seawater_RO_desalination_pressure_exchanger():
         ro.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(10.822, rel=1e-4) == value(
-        ro.inlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        ro.inlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.00, rel=1e-4) == value(ro.inlet.temperature[0.0])
     assert pytest.approx(7.0e6, rel=1e-4) == value(ro.inlet.pressure[0.0])
@@ -76,7 +76,7 @@ def test_seawater_RO_desalination_pressure_exchanger():
         ro.retentate.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(10.792, rel=1e-4) == value(
-        ro.retentate.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        ro.retentate.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.02, rel=1e-4) == value(ro.retentate.temperature[0.0])
     assert pytest.approx(6.7759e6, rel=1e-4) == value(ro.retentate.pressure[0.0])
@@ -84,7 +84,7 @@ def test_seawater_RO_desalination_pressure_exchanger():
         ro.permeate.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(2.9557e-2, rel=1e-4) == value(
-        ro.permeate.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        ro.permeate.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.02, rel=1e-4) == value(ro.permeate.temperature[0.0])
     assert pytest.approx(1.0132e5, rel=1e-4) == value(ro.permeate.pressure[0.0])
@@ -135,7 +135,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
         p1.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(10.822, rel=1e-4) == value(
-        p1.inlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        p1.inlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.00, rel=1e-4) == value(p1.inlet.temperature[0.0])
     assert pytest.approx(1.0e5, rel=1e-4) == value(p1.inlet.pressure[0.0])
@@ -143,7 +143,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
         p1.outlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(10.822, rel=1e-4) == value(
-        p1.outlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        p1.outlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.00, rel=1e-4) == value(p1.outlet.temperature[0.0])
     assert pytest.approx(7.0e6, rel=1e-4) == value(p1.outlet.pressure[0.0])
@@ -158,7 +158,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
         ro.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(10.822, rel=1e-4) == value(
-        ro.inlet.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        ro.inlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.00, rel=1e-4) == value(ro.inlet.temperature[0.0])
     assert pytest.approx(7.0e6, rel=1e-4) == value(ro.inlet.pressure[0.0])
@@ -166,7 +166,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
         ro.retentate.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(10.792, rel=1e-4) == value(
-        ro.retentate.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        ro.retentate.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.02, rel=1e-4) == value(ro.retentate.temperature[0.0])
     assert pytest.approx(6.7759e6, rel=1e-4) == value(ro.retentate.pressure[0.0])
@@ -174,7 +174,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
         ro.permeate.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(2.9557e-2, rel=1e-4) == value(
-        ro.permeate.flow_mass_phase_comp[0.0, "Liq", "TDS"]
+        ro.permeate.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.02, rel=1e-4) == value(ro.permeate.temperature[0.0])
     assert pytest.approx(1.0132e5, rel=1e-4) == value(ro.permeate.pressure[0.0])
@@ -197,10 +197,10 @@ def test_seawater_RO_desalination_pump_as_turbine():
     assert m.fs.costing.base_currency == pyunits.USD_2023
     assert value(m.fs.costing.LCOW) == pytest.approx(1.3638, rel=1e-3)
 
-    @pytest.mark.component
-    def test_main_1D_pump_as_turbine(self):
-        main(erd_type="pump_as_turbine", RO_1D=True)
+@pytest.mark.component
+def test_main_1D_pump_as_turbine(self):
+    main(erd_type="pump_as_turbine", RO_1D=True)
 
-    @pytest.mark.component
-    def test_main_1D_pressure_exchanger(self):
-        main(erd_type="pressure_exchanger", RO_1D=True)
+@pytest.mark.component
+def test_main_1D_pressure_exchanger(self):
+    main(erd_type="pressure_exchanger", RO_1D=True)
