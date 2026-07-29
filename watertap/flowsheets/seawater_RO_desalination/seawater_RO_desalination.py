@@ -412,7 +412,7 @@ def set_operating_conditions(m):
 
     desal.RO.feed_side.channel_height.fix(1e-3)  # channel height in membrane stage [m]
     desal.RO.feed_side.spacer_porosity.fix(
-        0.97
+        0.9
     )  # spacer porosity in membrane stage [-]
     desal.RO.permeate.pressure[0].fix(101325)  # atmospheric pressure [Pa]
     desal.RO.width.fix(1000)  # stage width [m]
