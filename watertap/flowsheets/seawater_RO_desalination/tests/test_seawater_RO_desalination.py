@@ -197,9 +197,11 @@ def test_seawater_RO_desalination_pump_as_turbine():
     assert m.fs.costing.base_currency == pyunits.USD_2023
     assert value(m.fs.costing.LCOW) == pytest.approx(1.3638, rel=1e-3)
 
+
 @pytest.mark.component
 def test_main_1D_pump_as_turbine(self):
     main(erd_type="pump_as_turbine", RO_1D=True)
+
 
 @pytest.mark.component
 def test_main_1D_pressure_exchanger(self):
