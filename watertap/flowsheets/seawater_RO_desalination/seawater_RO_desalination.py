@@ -722,9 +722,6 @@ def add_costing(m):
             costing_method_arguments={"cost_electricity_flow": True},
         )
     elif m.erd_type == "pump_as_turbine":
-        pass
-        # NOTE: Costing for the ERD is neglected. Keeping the commented line below for awareness.
-        # This change was applied here: https://github.com/watertap-org/watertap/commit/7180306a61755e6bc640f6b18f03a572f6de3850
         desal.ERD.costing = UnitModelCostingBlock(flowsheet_costing_block=m.fs.costing)
     else:
         raise ConfigurationError(

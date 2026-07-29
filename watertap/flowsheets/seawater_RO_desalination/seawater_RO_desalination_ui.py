@@ -42,7 +42,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
     # --- Input data ---
     # Feed conditions
     exports.add(
-        obj=fs.feed.flow_vol[0],
+        obj=fs.feed.properties[0].flow_vol,
         name="Feed volume flow",
         ui_units=pyunits.m**3 / pyunits.day,
         display_units="m3/day",
