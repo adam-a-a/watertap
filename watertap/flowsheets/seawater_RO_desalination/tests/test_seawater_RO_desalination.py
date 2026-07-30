@@ -66,7 +66,9 @@ def test_seawater_RO_desalination_pressure_exchanger():
     assert pytest.approx(0.424475, rel=1e-4) == value(
         ro.recovery_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.420695760, rel=1e-4) == value(ro.recovery_vol_phase[0.0, "Liq"])
+    assert pytest.approx(0.420695760, rel=1e-4) == value(
+        ro.recovery_vol_phase[0.0, "Liq"]
+    )
     assert pytest.approx(305.43, rel=1e-4) == value(
         ro.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
