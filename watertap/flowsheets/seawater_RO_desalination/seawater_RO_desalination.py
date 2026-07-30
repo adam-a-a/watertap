@@ -521,6 +521,13 @@ def initialize_system(m):
         desal.PXR.initialize()
         propagate_state(desal.s06)
 
+        desal.P2.control_volume.properties_out[0].pressure.fix(value(p1_out.pressure))
+        desal.P2.initialize()
+        desal.P2.control_volume.properties_out[0].pressure.unfix()
+        propagate_state(desal.s07)
+        desal.M1.initialize()
+        propagate_state(desal.s03)
+
         flags = fix_state_vars(desal.S1.mixed_state)
         solve(
             desal,
@@ -708,4 +715,4 @@ def display_costing(m):
 
 
 if __name__ == "__main__":
-    m = main(erd_type="pump_as_turbine", RO_1D=False)
+    m = main(erd_type="pressure_exchanger", RO_1D=True)

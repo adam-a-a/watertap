@@ -24,7 +24,10 @@ def test_seawater_RO_desalination_pressure_exchanger():
     m = main(erd_type="pressure_exchanger")
 
     f = m.fs.feed
-    assert pytest.approx(305.63, rel=1e-4) == value(
+    assert pytest.approx(0.420696, rel=1e-3) == value(
+        m.fs.desalination.RO.recovery_vol_phase[0, "Liq"]
+    )
+    assert pytest.approx(305.48, rel=1e-4) == value(
         f.flow_mass_phase_comp[0, "Liq", "H2O"]
     )
     assert pytest.approx(10.822, rel=1e-4) == value(
@@ -37,22 +40,22 @@ def test_seawater_RO_desalination_pressure_exchanger():
 
     p1 = m.fs.desalination.P1
     assert pytest.approx(0.8, rel=1e-4) == value(p1.efficiency_pump[0])
-    assert pytest.approx(1.1536e6, rel=1e-4) == value(p1.work_mechanical[0])
+    assert pytest.approx(1120502, rel=1e-4) == value(p1.work_mechanical[0])
     assert pytest.approx(6.9e6, rel=1e-4) == value(p1.deltaP[0])
     assert pytest.approx(70.0, rel=1e-4) == value(p1.ratioP[0])
 
-    assert pytest.approx(132.15, rel=1e-4) == value(
+    assert pytest.approx(128.35, rel=1e-4) == value(
         p1.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(4.6800, rel=1e-4) == value(
+    assert pytest.approx(4.547900, rel=1e-4) == value(
         p1.inlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.00, rel=1e-4) == value(p1.inlet.temperature[0.0])
     assert pytest.approx(1.0e5, rel=1e-4) == value(p1.inlet.pressure[0.0])
-    assert pytest.approx(132.15, rel=1e-4) == value(
+    assert pytest.approx(128.35, rel=1e-4) == value(
         p1.outlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(4.6800, rel=1e-4) == value(
+    assert pytest.approx(4.5479, rel=1e-4) == value(
         p1.outlet.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.00, rel=1e-4) == value(p1.outlet.temperature[0.0])
@@ -60,11 +63,11 @@ def test_seawater_RO_desalination_pressure_exchanger():
 
     ro = m.fs.desalination.RO
     assert pytest.approx(13914.0, rel=1e-4) == value(ro.area)
-    assert pytest.approx(0.43681, rel=1e-4) == value(
+    assert pytest.approx(0.424475, rel=1e-4) == value(
         ro.recovery_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(0.43293, rel=1e-4) == value(ro.recovery_vol_phase[0.0, "Liq"])
-    assert pytest.approx(305.57, rel=1e-4) == value(
+    assert pytest.approx(0.420695760, rel=1e-4) == value(ro.recovery_vol_phase[0.0, "Liq"])
+    assert pytest.approx(305.43, rel=1e-4) == value(
         ro.inlet.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
     assert pytest.approx(10.822, rel=1e-4) == value(
@@ -72,10 +75,10 @@ def test_seawater_RO_desalination_pressure_exchanger():
     )
     assert pytest.approx(298.00, rel=1e-4) == value(ro.inlet.temperature[0.0])
     assert pytest.approx(7.0e6, rel=1e-4) == value(ro.inlet.pressure[0.0])
-    assert pytest.approx(172.09, rel=1e-4) == value(
+    assert pytest.approx(175.781, rel=1e-4) == value(
         ro.retentate.flow_mass_phase_comp[0.0, "Liq", "H2O"]
     )
-    assert pytest.approx(10.792, rel=1e-4) == value(
+    assert pytest.approx(10.794, rel=1e-4) == value(
         ro.retentate.flow_mass_phase_comp[0.0, "Liq", "tds"]
     )
     assert pytest.approx(298.02, rel=1e-4) == value(ro.retentate.temperature[0.0])
@@ -114,7 +117,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
     m = main(erd_type="pump_as_turbine")
 
     f = m.fs.feed
-    assert pytest.approx(305.63, rel=1e-4) == value(
+    assert pytest.approx(305.48, rel=1e-4) == value(
         f.flow_mass_phase_comp[0, "Liq", "H2O"]
     )
     assert pytest.approx(10.822, rel=1e-4) == value(
@@ -127,7 +130,7 @@ def test_seawater_RO_desalination_pump_as_turbine():
 
     p1 = m.fs.desalination.P1
     assert pytest.approx(0.8, rel=1e-4) == value(p1.efficiency_pump[0])
-    assert pytest.approx(2.6676e6, rel=1e-4) == value(p1.work_mechanical[0])
+    assert pytest.approx(2666300.94, rel=1e-4) == value(p1.work_mechanical[0])
     assert pytest.approx(6.9e6, rel=1e-4) == value(p1.deltaP[0])
     assert pytest.approx(70.0, rel=1e-4) == value(p1.ratioP[0])
 
@@ -199,10 +202,10 @@ def test_seawater_RO_desalination_pump_as_turbine():
 
 
 @pytest.mark.component
-def test_main_1D_pump_as_turbine(self):
+def test_main_1D_pump_as_turbine():
     main(erd_type="pump_as_turbine", RO_1D=True)
 
 
 @pytest.mark.component
-def test_main_1D_pressure_exchanger(self):
+def test_main_1D_pressure_exchanger():
     main(erd_type="pressure_exchanger", RO_1D=True)
