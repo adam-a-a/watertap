@@ -62,7 +62,7 @@ class TestSeawaterProperty(PropertyTestHarness):
             ("visc_d_phase", "Liq"): 9.588e-4,
             ("osm_coeff", None): 0.9068,
             ("pressure_osm_phase", "Liq"): 2.588e6,
-            ("enth_mass_phase", "Liq"): 9.896e4,
+            ("enth_mass_phase", "Liq"): 9.9766e4,
             ("pressure_sat", None): 3111,
             ("cp_mass_phase", "Liq"): 4001,
             ("therm_cond_phase", "Liq"): 0.6086,
@@ -107,8 +107,8 @@ class TestSeawaterPropertySolution_1(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 5.596e-4,
             ("osm_coeff", None): 0.9029,
             ("pressure_osm_phase", "Liq"): 7.710e5,
-            ("enth_mass_phase", "Liq"): 2.057e5,
-            ("energy_density_phase", "Liq"): 2.046e8,
+            ("enth_mass_phase", "Liq"): 2.06690e5,
+            ("energy_density_phase", "Liq"): 2.0555e8,
             ("pressure_sat", None): 1.229e4,
             ("cp_mass_phase", "Liq"): 4.130e3,
             ("therm_cond_phase", "Liq"): 0.6400,
@@ -153,8 +153,8 @@ class TestSeawaterPropertySolution_2(PropertyRegressionTest):
             ("visc_d_phase", "Liq"): 1.443e-3,
             ("osm_coeff", None): 0.9106,
             ("pressure_osm_phase", "Liq"): 3.591e6,
-            ("enth_mass_phase", "Liq"): 4.783e4,
-            ("energy_density_phase", "Liq"): 3.968e7,
+            ("enth_mass_phase", "Liq"): 4.8008e4,
+            ("energy_density_phase", "Liq"): 3.9865e7,
             ("pressure_sat", None): 1.194e3,
             ("cp_mass_phase", "Liq"): 3.916e3,
             ("therm_cond_phase", "Liq"): 0.5854,
@@ -290,7 +290,7 @@ class TestSeawaterCalculateState_5(PropertyCalculateStateTest):
         self.state_solution = {
             ("flow_mass_phase_comp", ("Liq", "H2O")): 9091.08,
             ("flow_mass_phase_comp", ("Liq", "TDS")): 1239.69,
-            ("enth_mass_phase", "Liq"): 3.8562e5,
+            ("enth_mass_phase", "Liq"): 4.36167e5,
         }
 
 

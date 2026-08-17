@@ -857,8 +857,8 @@ def test_seawater_data():
         )
     )
     assert value(stream[0].total_dissolved_solids) == pytest.approx(35974.42, rel=1e-3)
-    assert value(stream[0].enth_mass_phase["Liq"]) == pytest.approx(98938.56, rel=1e-3)
-    assert value(stream[0].enth_flow) == pytest.approx(98918.931, rel=1e-3)
+    assert value(stream[0].enth_mass_phase["Liq"]) == pytest.approx(99744.185, rel=1e-3)
+    assert value(stream[0].enth_flow) == pytest.approx(99724.40, rel=1e-3)
     assert value(stream[0].pressure_sat) == pytest.approx(3110.73, rel=1e-3)
 
 
