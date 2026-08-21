@@ -147,11 +147,11 @@ class TestMembraneDisillation0D(UnitTestHarness):
         self.unit_solutions[
             m.fs.unit.hot_ch_outlet.flow_mass_phase_comp[0, "Liq", "TDS"]
         ] = 0.035
-        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 314.05209346659825
-        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 344.1024357724327
-        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.003345787450339149
-        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.5171083400694793
-        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.7069605503451193
+        self.unit_solutions[m.fs.unit.hot_ch_outlet.temperature[0]] = 314.0520934
+        self.unit_solutions[m.fs.unit.cold_ch_outlet.temperature[0]] = 344.102435
+        self.unit_solutions[m.fs.unit.flux_mass_avg[0]] = 0.00334578745
+        self.unit_solutions[m.fs.unit.thermal_efficiency[0]] = 0.517108340
+        self.unit_solutions[m.fs.unit.effectiveness[0]] = 0.7069605503
 
         self.conservation_equality = {
             "Check 1": {
