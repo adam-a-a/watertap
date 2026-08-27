@@ -54,7 +54,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "tds"],
+        obj=fs.feed.conc_mass_phase_comp[0, "Liq", "tds"],
         name="Feed TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -66,7 +66,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_comp[0, "tss"],
+        obj=fs.feed.conc_mass_phase_comp[0, "Liq", "tss"],
         name="Feed TSS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -522,7 +522,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.municipal.properties[0].conc_mass_comp["tds"],
+        obj=fs.municipal.properties[0].conc_mass_phase_comp["Liq", "tds"],
         name="Municipal TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -567,7 +567,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.landfill.properties[0].conc_mass_comp["tds"],
+        obj=fs.landfill.properties[0].conc_mass_phase_comp["Liq", "tds"],
         name="Landfill TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -589,7 +589,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.landfill.properties[0].conc_mass_comp["tss"],
+        obj=fs.landfill.properties[0].conc_mass_phase_comp["Liq", "tss"],
         name="Landfill TSS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
