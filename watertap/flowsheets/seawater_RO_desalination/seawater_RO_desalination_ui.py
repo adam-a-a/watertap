@@ -54,7 +54,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_phase_comp[0, "Liq", "tds"],
+        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "tds"],
         name="Feed TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
@@ -66,7 +66,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Feed",
     )
     exports.add(
-        obj=fs.feed.conc_mass_phase_comp[0, "Liq", "tss"],
+        obj=fs.feed.properties[0].conc_mass_phase_comp["Liq", "tss"],
         name="Feed TSS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
