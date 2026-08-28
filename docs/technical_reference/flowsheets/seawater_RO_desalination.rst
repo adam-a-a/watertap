@@ -19,8 +19,7 @@ This flowsheet uses several different modeling features available in WaterTAP, i
 Costing packages:
     * :doc:`/technical_reference/costing/zero_order_costing`
 Property models:
-    * :doc:`/technical_reference/core/water_props`
-    * :doc:`/technical_reference/property_models/seawater`
+    * :doc:`/technical_reference/property_models/mc_aq_sol`
 Unit models:
     * :doc:`/technical_reference/unit_models/zero_order_unit_models/index`
     * :doc:`/technical_reference/unit_models/reverse_osmosis_0D`
@@ -225,7 +224,7 @@ including the different build options for ``erd_type``:
 Code Documentation
 ------------------
 
-* :mod:`watertap.examples.flowsheets.case_studies.seawater_RO_desalination`
+* :mod:`watertap.flowsheets.seawater_RO_desalination`
 
 References
 ----------
