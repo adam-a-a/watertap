@@ -241,7 +241,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         is_output=False,
     )
     exports.add(
-        obj=fs.desalination.RO.B_comp[0, "TDS"],
+        obj=fs.desalination.RO.B_comp[0, "tds"],
         name="RO salt permeability coefficient",
         ui_units=pyunits.L / pyunits.hr / pyunits.m**2,
         display_units="LMH",
@@ -623,7 +623,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "TDS"],
+        obj=fs.disposal.properties[0].flow_mass_phase_comp["Liq", "tds"],
         name="Disposal TDS mass flow",
         ui_units=pyunits.kg / pyunits.s,
         display_units="kg/s",
@@ -634,7 +634,7 @@ def export_variables(flowsheet=None, exports=None, build_options=None, **kwargs)
         output_category="Outlets",
     )
     exports.add(
-        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "TDS"],
+        obj=fs.disposal.properties[0].conc_mass_phase_comp["Liq", "tds"],
         name="Disposal TDS concentration",
         ui_units=pyunits.mg / pyunits.L,
         display_units="mg/L",
